@@ -1,24 +1,7 @@
----
-title: "DATA3888 Interdisciplinary Report"
-author: "Kidney A6"
-date: '2022-05-30'
-output: 
-  html_document:
-    toc: true
-    theme: united
-    number_sections: true
-    code_folding: hide
-    fig_caption: yes
-bibliography: references.bib
-    
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_chunk$set(error = TRUE)
-```
-
-```{r loading packages hide, echo=FALSE, message=FALSE, cache = TRUE, warning=FALSE, error=FALSE}
+library(shiny)
+library(dplyr)
+library(highcharter) 
+library(plotly)
 library(GEOquery) 
 library(R.utils)
 library(reshape2)
@@ -30,14 +13,16 @@ library("annotate")
 library("rat2302.db")
 library("Biobase")
 library("biomaRt")
+library(dplyr)
 library("hgu133a.db")
 library("AnnotationDbi")
 library(cvTools)
 library(randomForest)
 library(caret)
-library(ggbiplot)
-library(plotly)
+library(dplyr)
 library(highcharter) 
+library(cluster)
+library(plotly)
 library(clusterProfiler)
 library(enrichplot)
 library(ggplot2)
@@ -49,22 +34,41 @@ library(DOSE)
 library(enrichplot)
 library(ggnewscale)
 library(pathview)
-library(clusterProfiler)
+library(MLmetrics)
+
+
+
+# load series and platform data from GEO
+
+# ------------------------------   training data set ---------------------------------------------------------------
 gset <- getGEO("GSE15296", GSEMatrix =TRUE, getGPL=FALSE)
 if (length(gset) > 1) idx <- grep("GPL570", attr(gset, "names")) else idx <- 1
 gset <- gset[[idx]]
+
 ex <- exprs(gset)
 # log2 transform
 qx <- as.numeric(quantile(ex, c(0., 0.25, 0.5, 0.75, 0.99, 1.0), na.rm=T))
 LogC <- (qx[5] > 100) ||
-          (qx[6]-qx[1] > 50 && qx[2] > 0)
+  (qx[6]-qx[1] > 50 && qx[2] > 0)
 if (LogC) { ex[which(ex <= 0)] <- NaN
-  ex <- log2(ex) }
-# Outcome Classes -> Stable/Rejection
+ex <- log2(ex) }
+
 gset$Outcome <- ifelse(grepl("phenotype: Well-functioning kidney transplant", gset$`characteristics_ch1.1`), "Stable", "Rejection")
+
+
+# Convert gene id to gene symbol:
+fSet <- fData(gset)
+
+
+
+probeSet <- rownames(fSet)
+
 e <- gset
+
+
 mart <- useMart("ENSEMBL_MART_ENSEMBL")
 mart <- useDataset("hsapiens_gene_ensembl", mart)
+
 annotLookup <- getBM(
   mart = mart,
   attributes = c(
@@ -76,304 +80,111 @@ annotLookup <- getBM(
   filter = "affy_hg_u133_plus_2",
   values = rownames(exprs(e)),
   uniqueRows=TRUE)
+
 order <- which(!duplicated(annotLookup$affy_hg_u133_plus_2))
 annotLookup <- annotLookup[order,]
+
+
 Gene <- data.frame(Symbol = annotLookup$external_gene_name, EntrezID = annotLookup$entrezgene_id, row.names = annotLookup$affy_hg_u133_plus_2)
+
 reorder_idx <- match(rownames(Gene), rownames(e))
+
 e <- e[reorder_idx,]
+
 idx <- which(!is.na(Gene$Symbol) & !duplicated(Gene$Symbol))
+
+
 e <- e[idx,]
+
+
 Gene <- Gene[idx,]
 rownames(e) <- Gene$Symbol
+
+
 e <- e[which(rownames(e) != ""),] #get rid of empty rows which don't have a matching gene symbol
+
+
+
+
+# ------ PCA PLOT ----------------
+# PCA Plot:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Feature selection: 
+design <- model.matrix(~Outcome, data = pData(e))
+fit <- lmFit(ex, design)
+fit <- eBayes(fit)
+
+
+tT <- topTable(fit, n = Inf) 
+DT::datatable(round(tT[1:50, ], 2))
+
 # Store top 50 DE genes in a vector: 
-top50De <- apply(e, 1, var)
-top50De = names(sort(top50De, decreasing = TRUE)[1:50])
-set.seed(3888)
-X = as.matrix(t(ex))
-y = gset$Outcome
-y <- factor(y, levels = c("Rejection", "Stable")) #outputs a rejection or stable prediction for genes
-# Performing feature selection -> top 50 DE genes
-design <- model.matrix(~y) # just done on the training set
-fit <- eBayes(lmFit(t(X), design)) #transposed
-top50Genes = rownames(topTable(fit, n = 50))
-X <- X[, top50Genes]
-cvK = 5  # number of CV folds
-cv_50acc5_knn = cv_50acc5_svm = cv_50acc5_rf = c()
-cv_acc_knn = cv_acc_svm = cv_acc_rf = c()
-n_sim = 25 ## number of repeats
-for (i in 1:n_sim) {
-  cvSets = cvTools::cvFolds(nrow(X), cvK)  # permute all the data, into 5 folds
-  cv_acc_knn = cv_acc_svm = cv_acc_rf = c()
-  
-  for (j in 1:cvK) {
-    
-    #subsetting the training and test data
-    test_id = cvSets$subsets[cvSets$which == j]
-    X_test = X[test_id, ]
-    X_train = X[-test_id, ]
-    y_test = y[test_id]
-    y_train = y[-test_id]
-    
-  
-    ## KNN
-    fit5 = class::knn(train = X_train, test = X_test, cl = y_train, k = 5)
-    cv_acc_knn[j] = mean(fit5 == y_test)
-    
-    ## SVM
-    svm_res <- e1071::svm(x = X_train, y = as.factor(y_train))
-    fit <- predict(svm_res, X_test)
-    cv_acc_svm[j] = mean(fit == y_test)
-    ## RandomForest
-    rf_res <- randomForest::randomForest(x = X_train, y = as.factor(y_train))
-    fit <- predict(rf_res, X_test)
-    cv_acc_rf[j] = mean(fit == y_test)
-  }
-  cv_50acc5_knn <- append(cv_50acc5_knn, mean(cv_acc_knn))
-  cv_50acc5_svm <- append(cv_50acc5_svm, mean(cv_acc_svm))
-  cv_50acc5_rf <- append(cv_50acc5_rf, mean(cv_acc_rf))
-} ## end for
-gset2 <- getGEO("GSE129166", GSEMatrix =TRUE, getGPL=FALSE)
-if (length(gset2) > 1) idx <- grep("GPL570", attr(gset2, "names")) else idx <- 1
-gset2 <- gset2[[idx]]
-ex2 <- exprs(gset2)
-# log2 transform
-qx <- as.numeric(quantile(ex2, c(0., 0.25, 0.5, 0.75, 0.99, 1.0), na.rm=T))
-LogC <- (qx[5] > 100) ||
-          (qx[6]-qx[1] > 50 && qx[2] > 0)
-if (LogC) { ex2[which(ex2 <= 0)] <- NaN
-  ex2 <- log2(ex2) }
-# combine tcmr and abmr for rejection
-# ifelse for tcmr and abmr columns, if both rejection -> R, if both are stable -> stable, if one stable/rejection -> rejection
-tcmr <- gset2$`tcmr (no:ch1`
-abmr <- gset2$`abmr (no:ch1`
-outcome <- 'NA'
-# create dataframe combining two columns: 
-outcome_df <- data.frame(abmr, tcmr, outcome)
-# Looping through dataframe and adding rejection/stable to new column
-for (row in 1:nrow(outcome_df)) {
-  if(grepl("0_Yes:1): 1", outcome_df[row, "abmr"])) {
-    if(grepl("TCMR:2): 1", outcome_df[row, "tcmr"]) || grepl("TCMR:2): 2", outcome_df[row, "tcmr"])) {
-      outcome_df[row, "outcome"] <- "Rejection"
-    } else {
-      # still rejection if abmr is classified as rejection
-      outcome_df[row, "outcome"] <- "Rejection"
-      
-    }
-  } else {
-    outcome_df[row, "outcome"] <- "Stable"
-  } 
-}
-  
-# now we have outcome column -> replace "Outcome" column in gset2
-gset2$Outcome <- outcome_df$outcome
-table(gset2$Outcome)
-e2 <- gset2
-mart <- useMart("ENSEMBL_MART_ENSEMBL")
-mart <- useDataset("hsapiens_gene_ensembl", mart)
-annotLookup <- getBM(
-  mart = mart,
-  attributes = c(
-    "affy_hg_u133_plus_2",
-    "ensembl_gene_id",
-    "gene_biotype",
-    "entrezgene_id",
-    "external_gene_name"),
-  filter = "affy_hg_u133_plus_2",
-  values = rownames(exprs(e2)),
-  uniqueRows=TRUE)
-order <- which(!duplicated(annotLookup$affy_hg_u133_plus_2))
-annotLookup <- annotLookup[order,]
-Gene <- data.frame(Symbol = annotLookup$external_gene_name, EntrezID = annotLookup$entrezgene_id, row.names = annotLookup$affy_hg_u133_plus_2)
-reorder_idx <- match(rownames(Gene), rownames(e2))
-e2 <- e2[reorder_idx,]
-idx <- which(!is.na(Gene$Symbol) & !duplicated(Gene$Symbol))
-e2 <- e2[idx,]
-Gene <- Gene[idx,]
-rownames(e2) <- Gene$Symbol
-e2 <- e2[which(rownames(e2) != ""),] #get rid of empty rows which don't have a matching gene symbol
-set.seed(3888)
-X = as.matrix(t(exprs(e2))) # transpose the data matrix
-y = gset2$Outcome # outcome variable containing the levels: Rejection/Stable
-y <- na.omit(y) # remove na values if they exist
-y <- factor(y, levels = c("Rejection", "Stable")) #outputs a rejection or stable prediction for genes
-X <- X[, top50De] #top50Genes from the first dataset 1
-X <- na.omit(X)
-cvK = 5  # number of CV folds
-cv_50acc5_knn = cv_50acc5_svm = cv_50acc5_rf = c()
-cv_acc_knn = cv_acc_svm = cv_acc_rf = c()
-n_sim = 25 ## number of repeats
-for (i in 1:n_sim) {
-  cvSets = cvTools::cvFolds(nrow(X), cvK)  # permute all the data, into 5 folds
-  cv_acc_knn = cv_acc_svm = cv_acc_rf = c()
-  
-  for (j in 1:cvK) {
-    
-    #subsetting the training and test data
-    test_id = cvSets$subsets[cvSets$which == j]
-    X_test = X[test_id, ]
-    X_train = X[-test_id, ]
-    y_test = y[test_id]
-    y_train = y[-test_id]
-    
-    
-    
-    ## KNN
-    fit5 = class::knn(train = X_train, test = X_test, cl = y_train, k = 5)
-    cv_acc_knn[j] = mean(fit5 == y_test)
-    
-    ## SVM
-    svm_res <- e1071::svm(x = X_train, y = as.factor(y_train))
-    fit <- predict(svm_res, X_test)
-    cv_acc_svm[j] = mean(fit == y_test)
-    ## RandomForest
-    rf_res <- randomForest::randomForest(x = X_train, y = as.factor(y_train))
-    fit <- predict(rf_res, X_test)
-    cv_acc_rf[j] = mean(fit == y_test)
-  }
-  cv_50acc5_knn <- append(cv_50acc5_knn, mean(cv_acc_knn))
-  cv_50acc5_svm <- append(cv_50acc5_svm, mean(cv_acc_svm))
-  cv_50acc5_rf <- append(cv_50acc5_rf, mean(cv_acc_rf))
-} ## end for
-organism = "org.Hs.eg.db" #human
-# Store top 50 DE genes in a vector: 
-top250De <- apply(e, 1, var)
-top250De = names(sort(top250De, decreasing = TRUE)[1:250])
-feat250 <- e[rownames(e)%in%top250De,] #top50genes from first dataset (training)
-eg = bitr(rownames(feat250), fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
-geneLs <- eg$ENTREZID
-geneLs <- sort(geneLs, decreasing = TRUE)
-geneSym <- eg$SYMBOL
-# making a kegg object:
-mkk2 <- enrichKEGG(geneLs,
-                 organism = 'hsa',
-                 pvalueCutoff = 0.05
-                )
-```
 
-
-
-
-# Executive Summary
-## Background and Motivation
-Renal transplantation is a viable treatment option for individuals who are diagnosed with severe kidney disease. However the immune system of the recipients of kidney transplants may reject it causing a pathological reaction. In the area of molecular biology, genomics and proteomics, the gold standard for identifying post-transplant dysfunction is surveillance of allograft biopsies, with serologic biomarkers including serum creatinine, donor-specific antibodies, and urinalysis. However, the research gap is that current methods tend to miss “clinically unsuspected rejection” which occurs at an early molecular level, undetected by current thresholds. This study aims to provide new insights into the prediction of post-transplant outcomes and biological pathways related to important genes. The final product is a shiny application that provides interactive functions for users to investigate the prediction model, and a ‘Stable’ or ‘Rejection’ outcome based on gene expression levels. 
-
-
-## Main Findings
-**Top Biological Pathways:**  The 250 of the most differentially expressed genes from GSE15296 were selected and the top biological pathways were identified. This can help the target audience gain insight into the underlying mechanisms of disease development.
-
-
-**Top 50 Differentially Expressed (DE) Genes:**  The 50 most differentially expressed genes were identified, by using a filtering strategy of feature selection, which is important in effective biomarker identification for early diagnosis and treatment planning.
-
-
-**Performance of the Classifier:** The prediction models chosen include Support-Vector Machine (SVM), K-Nearest Neighbours (KNN), and Random Forest (RF). All models achieve greater than 89% prediction accuracy. 
-
-## Key Figures 
-There are 5 figures in this report. Figure 1 shows the workflow of this project. Figure 2 is a table of the top 50 differentially expressed genes from the training dataset. Figure 3 visualises the performance of the classifier model. Pathway analysis is visualised as a dot plot in Figure 4 and a Gene-Concept Network in Figure 5.
-
-
-# Methods 
-
-## Design 
-The main discipline background of this project is biomedical field and biogenetics. The kidney transplantation surgery we are talking about, genes are all about biomedical knowledge. However, in order to study kidney transplantation and predict kidney transplantation  based on gene expression levels, we need to use the knowledge of data science. We use prediction models to do prediction and calculate accuracy of each model, feature selection to select top 50 most differentially expressed genes and so on. We combined our knowledge of data science with that of Bioscience, which brings up our project. 
-
-
-## Biomedical Data and Platforms
-The data used in this study was extracted from the Gene Expression Omnibus (GEO) repository which contains omics type datasets supplied by researchers.  Omics data are high-dimensional and large-scale datasets that capture the fields of metabolomics, proteomics, genomics, and chromatography. This study used microarray profiles taken from peripheral blood and kidney allograft biopsies which contained gene expression data with G genes for n individuals. The complexity of such data lies in the gene expression matrix where data scientists are introduced with a large number of variables (genes) against a small number of patient samples (n). For a meaningful analysis of omics data, consolidative approaches must be taken to identify trends in pathology. This workflow often involves pre-processing, feature selection, multivariate analysis, and data visualisation which supports the analysis of omics data without failing to observe significant experimental factors [@1]. 
-
-The open-source software for bioinformatics, Bioconductor was used to supplement our genomic analysis by providing R packages including statistical, graphical, and annotation methods [@2]. Pathway analysis in this study utilises the Kyoto Encyclopedia of Genes and Genomes (KEGG) database where high-throughput experimental technologies aided in the transformation of deep molecular data into a broader biological system. The biological pathways identified used KEGG Pathways which maps pathways using the molecular interaction, and relation networks for metabolism, genetic information processing, environmental information processing, cellular processes, organismal systems, human diseases, and drug development [@3].
-
-
-## Data Synthesis and Analysis (Data Collection)
-### Training Data: GSE15296 - Peripheral Blood Biomarker Signatures for Acute Kidney Transplant Rejection
-The training data is sourced from the online data repository for functional genomics data, Gene Expression Omnibus (GEO). The training data, GSE15296 explores microarray samples from the peripheral blood of kidney transplant patients. The dimensions of the data include 54675 features and 75 samples. From genome expression profiling of each blood sample, 51 were classified as acute kidney transplant rejection, and 24 are classified as stable with biopsy-proven normal transplant histology. The rejection classified samples include four subtypes of acute rejection (AR) including Banff Borderline, IIA, IA, and IB. It is assumed that kidney transplant rejection is not caused by BK nephropathy, other infections, drug-induced nephrotoxicity or ureteral obstruction.  GSE15296 was based on the GPL570 platform (Affymetrix Human Genome U133 Plus 2.0 Array).
-
-GSE15296: <https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE15296>
-
-
-### Validation Data: GSE129166 - Gene Expression Profiling in Patients With a Kidney Transplantation 
-The validation data is sourced from the online data repository for functional genomics data, Gene Expression Omnibus (GEO). The validation data, GSE129166 explores the peripheral blood samples, as well as kidney allograft biopsies to investigate the mRNA expression for renal transplant outcomes. The dimensions of the data include 54675 features and 212 samples. There are 117 peripheral blood samples and 95 kidney allograft biopsies. The rejection classified samples include the subtypes: T-cell mediated rejection (TCMR), Banff borderline, and acute cell-mediated allograft rejection (ACMR). There are 52 rejection samples and 160 stable samples. GSE129166 was based on the GPL570 platform (Affymetrix Human Genome U133 Plus 2.0 Array).
-
-GSE129166: <https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE129166>
-
-
-### Analysis Methods
-The training and validation datasets were pre-processed independently of each other. Pre-processing involved the non-linear logarithmic transformation (log2) to normalise the gene expression data. With RNA-Seq type data, Log2 transformation does not result in optimally normal distributed data, however, becomes less skewed than without performing such transformation. This reduces the encountering of extreme values and leads to a more proportional analysis that supports useful insights after parametric tests [@4]. Missing values across both datasets were absent, however, if they were encountered, the R package, ‘missRows’ will be used as it estimates the values of sample patients and features where missing values are present. The uncertainty of replacing missing values using this package will be graphically displayed [@5]. 
-
-
-The patient sample profiles were accessed using the “pData” function which shows the phenotype metadata across each patient. For both datasets, the type of acute kidney rejection or normal histology (stable) characteristics is defined in the “characteristics_ch1.2” variable. The rejection verse stable outcomes for each sampled patient were accessed using the “characteristics_ch1.1” variable. For better readability, the string-matching function in R, ‘grep’ was given the expression format of the “characteristics_ch1.1” variable and simplified to ‘Stable’ or ‘Rejection’. The number of stable and rejection patients for both datasets were compared to the research study which supplied the data to GEO. 
-
-
-The genes for both datasets were stored as Affymetrix probe IDs and were converted to their respective gene symbols, as the Affymetrix IDs were unique to each dataset. This transformation of probe id to gene symbol utilised the biomaRt package which provisioned an interface to map the ids to the homo sapiens dataset using the BioMart database. After the transformation, the feature size was reduced from 54675 to 20520 for both datasets due to several Affymetrix ids without matching gene symbols.
-
-
-Principle Component Analysis is performed before building the prediction model to explore significant factors in distinguishing between rejection and stable patients. Due to the vast size of the data matrix, and the multitude of components of the microarray, PCA reduces the curse of dimensionality using the top two significant principal components (PC1 and PC2). If there is no clear trend present in the PCA visualisation to separate stable from rejection patients, then filtering methods will be 
-used to make biologically relevant inferences. 
-
-
-
-## Model Development
-The human microarray datasets; GSE15296 and GSE129166 were split into training and validation sets. Differential expression analysis was performed on GSE15296 to create an input vector of the top 50 differentially expressed genes (DEGs). This is done to identify features that are biologically plausible for disease discrimination and leads to better classifier performance. The Limma package in R was utilised since it is fundamentally developed for the analysis of microarray data. This process involves computation of a mean sample variance of the genes then observed values are adjusted towards this mean-variance using the empirical Bayes method. 
-
-To generate the classification model, the dataset, GSE15296 is used. The transpose of the microarray matrix is considered as “X”, and the samples are filtered based on the top 50 DE genes. The outcome variable with levels: “Rejection”, and “Stable” are considered as “Y”. The classification approach taken involved the following algorithms, Support Vector Machine (SVM), K-Nearest Neighbours (KNN), and Random Forest (RF). The classifier is designed to output a majority-based prediction for example if two of the algorithms predicted a Rejection outcome, and one algorithm predicted Stable, then the overall prediction would be Rejection. 
-
-This prediction outcome is based on the upregulation and downregulation of genes, entered as expression levels by the user. The performance of each algorithm is computed by randomly splitting the training dataset and fitting a model on each split to evaluate it on the test data. The predictive accuracy or evaluation score is taken and averaged over each split [@6]. To validate the performance of the model, GSE129166 is used as a validation dataset using the top 50 DE genes from the training dataset, GSE15296. This is designed to investigate whether these genes are capable of predicting Rejection or Stable outcomes from the validation dataset with similar performance measures. 
-
-Pathway Analysis was performed to explore the significant biological pathways given the top 250 DE genes from the GSE15296 dataset. This is another statistical method that aims to provide further insights into the interaction phenomena among the genes, which may not be captured by the changes in phenotype labels alone. Functional enrichment analysis was performed using the Kyoto Encyclopedia of Genes and Genomes (KEGG). The parameters for the pathway analysis include gene: list of genes in gene symbol format; organism: ‘hsa’; pvalueCutoff: 0.05. These pathways are visually represented using a dot plot, and a gene-concept network graph. 
-
-
-
-# Results
-## Evaluation Strategies
-The top 50 DE genes from the training dataset were computed based on the PCA visualisations. These visualisations are documented on the shiny application, however, in summary, the initial PCA visualisation on the training dataset showed no strong trends which identified stable from rejection outcomes. However, performing PCA with the top 50 DE genes showed stronger clusters for each class independently, therefore providing a further investigation into the significance of these genes. During the exploratory analysis of the training and validation datasets, the ratio of Stable to Rejection samples was found to be unequal. The classification of imbalanced data may produce results that are skewed as there are more samples attributing to one class over the other. The F-1 score mitigates this issue by evaluating the precision and recall into a single metric. The performance accuracy for each of the classifiers is considered with the computed F-1 score to understand a better predictive capability. Considering the performance accuracy alone may overestimate the ability of the prediction model to correctly predict instances of the outcome with fewer samples [@7]. Both metrics are documented with transparency to ensure users of the application are made aware that there may be false negatives and false positives with the predicted outcome. The training dataset investigates peripheral blood samples, however since kidney allograft biopsies are a common method of clinical sampling, the study used a validation dataset that captures both peripheral blood and tissue samples to investigate the performance.  
-
-**Figure 1. Study Design**
-![Figure 1](/Users/aleishamanalo/Desktop/Kidney_A6_Report/figure1.png)
-
-
-
-
-
-
-## Identification of Differentially Expressed Genes (DEGs) and Principal Component Analysis (PCA)
-The top 50 DE genes from GSE15296 are listed here in the format of their respective gene symbols. These genes are significant in distinguishing stable from rejection patients, and have been used throughout the classifier creation, as well as pathway analysis. The PCA plot on the shiny application presents the difference in distinguishing patient outcomes with and without the selection of the top 50 DE genes. 
-```{r top 50 de genes, echo = FALSE, message=FALSE}
-# Performing feature selection -> top 50 DE genes
 top50De <- apply(e, 1, var)
 top50De = names(sort(top50De, decreasing = TRUE)[1:50])
 top50De
-```
+
+featSub <- gset[rownames(e)%in%top50De,]
+featSub
+
+featSub_pca <- prcomp(t(exprs(featSub)), .scale = TRUE)
+df_toplot <- data.frame(featSub$Outcome,
+                        pc1 = featSub_pca$x[,1], pc2 = featSub_pca$x[,2]  )
+
+# top 250 genes
+design <- model.matrix(~Outcome, data = pData(e))
+fit <- lmFit(ex, design)
+fit <- eBayes(fit)
+
+tT <- topTable(fit, n = Inf) 
+DT::datatable(round(tT[1:250, ], 2))
 
 
 
-## Prediction Model
-The following figures display the performance accuracy of the classifiers in the form of a box plot. 
-In Figure 2, the prediction model using the training dataset produced median accuracies of 90% (KNN), 92% (SVM), 91% (RF). The f1-scores produced are 0.93 (KNN), 0.94 (SVM), 0.93 (RF).
 
-In Figure 3, the prediction model using the validation dataset produced median accuracies of 75% (SVM), 70% (KNN), and 71% (RF). The f1-scores produced are 0.22 (KNN), 0 (SVM), 0.28 (RF). 
-
-
-
-**Figure 2. Performance of Prediction Model on Training Data**
-```{r model performance TRAINING, echo = TRUE, message=FALSE, warning=FALSE}
-library(plotly)
-# Set highcharter options
+# prediction model -> 
 set.seed(3888)
-X = as.matrix(t(ex))
+
+X = as.matrix(t(exprs(e)))
 y = gset$Outcome
 y <- factor(y, levels = c("Rejection", "Stable")) #outputs a rejection or stable prediction for genes
+
 # Performing feature selection -> top 50 DE genes
 design <- model.matrix(~y) # just done on the training set
 fit <- eBayes(lmFit(t(X), design)) #transposed
 top50Genes = rownames(topTable(fit, n = 50))
+
+
 X <- X[, top50Genes]
+
+
+
 cvK = 5  # number of CV folds
 cv_50acc5_knn = cv_50acc5_svm = cv_50acc5_rf = c()
 cv_acc_knn = cv_acc_svm = cv_acc_rf = c()
+f1_50_svm = f1_50_rf = f1_50_knn = c()
+
+
 n_sim = 25 ## number of repeats
 for (i in 1:n_sim) {
+  
   cvSets = cvTools::cvFolds(nrow(X), cvK)  # permute all the data, into 5 folds
   cv_acc_knn = cv_acc_svm = cv_acc_rf = c()
+  f1_folds_svm = f1_folds_rf = f1_folds_knn = c()
+
   
   for (j in 1:cvK) {
     
@@ -389,346 +200,136 @@ for (i in 1:n_sim) {
     ## KNN
     fit5 = class::knn(train = X_train, test = X_test, cl = y_train, k = 5)
     cv_acc_knn[j] = mean(fit5 == y_test)
+    f1_knn = F1_Score(y_test, fit5)
     
     ## SVM
     svm_res <- e1071::svm(x = X_train, y = as.factor(y_train))
     fit <- predict(svm_res, X_test)
     cv_acc_svm[j] = mean(fit == y_test)
+    f1_svm = F1_Score(y_test, fit)
+    
     ## RandomForest
     rf_res <- randomForest::randomForest(x = X_train, y = as.factor(y_train))
     fit <- predict(rf_res, X_test)
     cv_acc_rf[j] = mean(fit == y_test)
+    f1_rf = F1_Score(y_test, fit)
+    
+    ## Remove nan and NA from F1 scores
+    if (is.nan(f1_knn)) {
+      f1_knn = 0
+    }
+    if (is.na(f1_knn)) {
+      f1_knn = 0
+    }
+    
+        
+    if (is.nan(f1_svm)) {
+      f1_svm = 0
+    }
+    if (is.na(f1_svm)) {
+      f1_svm = 0
+    }
+  
+        
+    if (is.nan(f1_rf)) {
+      f1_rf = 0
+    }
+    if (is.na(f1_rf)) {
+      f1_rf = 0
+    }
+    
+    ## Append f1 scores for models
+    f1_folds_svm = append(f1_folds_svm, f1_svm)
+    f1_folds_knn = append(f1_folds_knn,f1_knn)
+    f1_folds_rf = append(f1_folds_rf, f1_rf)
+
   }
   cv_50acc5_knn <- append(cv_50acc5_knn, mean(cv_acc_knn))
   cv_50acc5_svm <- append(cv_50acc5_svm, mean(cv_acc_svm))
   cv_50acc5_rf <- append(cv_50acc5_rf, mean(cv_acc_rf))
+  f1_50_knn = append(f1_50_knn , mean(f1_folds_knn))
+  f1_50_rf = append(f1_50_rf, mean(f1_folds_rf))
+  f1_50_svm = append(f1_50_svm, mean(f1_folds_svm))
 } ## end for
-options(highcharter.theme = hc_theme_smpl(tooltip = list(valueDecimals = 2)))
-acc_df <- data.frame(cv_50acc5_knn, cv_50acc5_svm, cv_50acc5_rf)
-acc_df$cv_50acc5_knn <- as.factor(acc_df$cv_50acc5_knn)
-acc_df$cv_50acc5_svm <- as.factor(acc_df$cv_50acc5_svm)
-acc_df$cv_50acc5_rf <- as.factor(acc_df$cv_50acc5_rf)
-p <- plot_ly(type = "box")
-p <- p %>% add_trace(y = acc_df$cv_50acc5_svm, quartilemethod="linear", name = "SVM")
-p <- p %>% add_trace(y = acc_df$cv_50acc5_knn, quartilemethod="linear", name = "KNN")
-p <- p %>% add_trace(y = acc_df$cv_50acc5_rf, quartilemethod="linear", name = "RF")
-p <- p %>% layout(title = "Cross Validation Accuracies for Predicting Transplant Outcomes") 
-p
-```
+
+f1_knn = round(mean(f1_50_knn),2)
+f1_rf = round(mean(f1_50_rf),2)
+f1_svm = round(mean(f1_50_svm),2)
 
 
-**Figure 3. Performance of Prediction Model on Validation Data**
-```{r validation dataset performance, echo=TRUE, message=FALSE, include=TRUE, cache=TRUE, warning=FALSE}
-# Set highcharter options
-set.seed(3888)
-X = as.matrix(t(exprs(e2)))
-y = gset2$Outcome
-y <- na.omit(y)
-y <- factor(y, levels = c("Rejection", "Stable")) #outputs a rejection or stable prediction for genes
-X <- X[, top50De] #top50Genes from the first dataset 1
-X <- na.omit(X)
-cvK = 5  # number of CV folds
-cv_50acc5_knn = cv_50acc5_svm = cv_50acc5_rf = c()
-cv_acc_knn = cv_acc_svm = cv_acc_rf = c()
-n_sim = 25 ## number of repeats
-for (i in 1:n_sim) {
-  cvSets = cvTools::cvFolds(nrow(X), cvK)  # permute all the data, into 5 folds
-  cv_acc_knn = cv_acc_svm = cv_acc_rf = c()
-  
-  for (j in 1:cvK) {
-    
-    #subsetting the training and test data
-    test_id = cvSets$subsets[cvSets$which == j]
-    X_test = X[test_id, ]
-    X_train = X[-test_id, ]
-    y_test = y[test_id]
-    y_train = y[-test_id]
-    
-    
-    
-    ## KNN
-    fit5 = class::knn(train = X_train, test = X_test, cl = y_train, k = 5)
-    cv_acc_knn[j] = mean(fit5 == y_test)
-    
-    ## SVM
-    svm_res <- e1071::svm(x = X_train, y = as.factor(y_train))
-    fit <- predict(svm_res, X_test)
-    cv_acc_svm[j] = mean(fit == y_test)
-    ## RandomForest
-    rf_res <- randomForest::randomForest(x = X_train, y = as.factor(y_train))
-    fit <- predict(rf_res, X_test)
-    cv_acc_rf[j] = mean(fit == y_test)
-  }
-  cv_50acc5_knn <- append(cv_50acc5_knn, mean(cv_acc_knn))
-  cv_50acc5_svm <- append(cv_50acc5_svm, mean(cv_acc_svm))
-  cv_50acc5_rf <- append(cv_50acc5_rf, mean(cv_acc_rf))
-} ## end for
-acc_df <- data.frame(cv_50acc5_knn, cv_50acc5_svm, cv_50acc5_rf)
-acc_df$cv_50acc5_knn <- as.factor(acc_df$cv_50acc5_knn)
-acc_df$cv_50acc5_svm <- as.factor(acc_df$cv_50acc5_svm)
-acc_df$cv_50acc5_rf <- as.factor(acc_df$cv_50acc5_rf)
-p <- plot_ly(type = "box")
-p <- p %>% add_trace(y = acc_df$cv_50acc5_svm, quartilemethod="linear", name = "SVM")
-p <- p %>% add_trace(y = acc_df$cv_50acc5_knn, quartilemethod="linear", name = "KNN")
-p <- p %>% add_trace(y = acc_df$cv_50acc5_rf, quartilemethod="linear", name = "RF")
-p <- p %>% layout(title = "Cross Validation Accuracies for Predicting Transplant Outcomes") 
-p
-```
+# pathway analysis code ----------------------------------------
+organism = "org.Hs.eg.db" #human
+
+
+# Store top 250 DE genes in a vector: 
+
+top250De <- apply(e, 1, var)
+top250De = names(sort(top250De, decreasing = TRUE)[1:250])
 
 
 
-## Pathway Enrichment Analysis with DEGs
-The dot plot visualisation shows 25 up-regulated KEGG pathways, with the size of each dot corresponding to the number of genes enriched in the pathway, and the color of each dot represents the level of significance based on the p-adjusted value. 
-**Figure 4. Pathway Visualisation: Dot Plot**
-```{r pathway dot plot, echo=TRUE, message=FALSE, include = TRUE, cache = TRUE, warning=FALSE}
-dotplot(mkk2, showCategory = 25) + ggtitle("KEGG Pathway Dot Plot") + scale_y_discrete(guide = guide_axis(check.overlap = TRUE))
-```
-
-
-The gene-concept network graph depicts the top 6 significant pathways, and the correlation of the top 250 differentially expressed genes between each pathway. The enriched pathways are categorised by colour, with each gene mapped using an undirected edge to a pathway category. The colour of category nodes are tan, and gene nodes are grey. The size of each node corresponds to the number of genes included in the pathway. The genes are labelled according to their gene symbol. 
-**Figure 5. Pathway Visualisation: Network Plot**
-```{r pathway network, echo=TRUE, message=FALSE, include = TRUE, cache = TRUE, warning=FALSE}
-options(ggrepel.max.overlaps = Inf)
-set.seed(1234)
-# change entrez id to gene symbol to be used in the cnet plot -> 
-kegg <- setReadable(mkk2, 'org.Hs.eg.db', 'ENTREZID')
-cnetplot(kegg, categorySize="pvalue", foldChange=geneSym, showCategory = 6, colorEdge = TRUE, node_label_size = 1, repel = TRUE, layout = "kk", cex_label_gene = 0.5, cex_category = 0.6) +  ggplot2::labs(title = "Gene-Concept Network for KEGG Pathways") 
-```
+feat250 <- e[rownames(e)%in%top250De,] #top50genes from first dataset (training)
 
 
 
-# Discussion 
-The risk calculator went through many stages in its development. While there are limitations to this project further improvements are possible. Overall the calculator still matches the needs of a research medical clinician in finding the most suitable candidate for kidney transplantation and in visualising the unlimited possibilities of gene expression combinations.
-
-
-The risk calculator outputs the likelihood of graft survival derived from a collection of gene expression values. The probability of an outcome approximates the likelihood that an outcome would occur. A calculator that is not only functional but highly accurate is imperative as there are significant implications. A risk calculator is a supplementary tool that allows medical researchers to make better-informed decisions. It is therefore a data analyst's role to command these considerations and produce an accurate and valid model. 
-
-
-## Limitations 
-While our models are approximately over 90%, there are strong arguments that this is not enough. When operating, it is the technician's main role to be objectively right almost all the time. The error should be greatly minimised and one's confidence shouldn’t depend on likely chance but certainly. Future products will attempt to maximise accuracy and hope to develop the perfect model.
-
-
-The utility of our calculator has great potential. Inputting the expression values of our top 50 DE genes is a tedious task, but as something intended to be exact and distributed to a researcher, the method is absolutely necessary. How the small interactions of expression levels interact and the different possible outcomes they produce is something a researcher would consider. An improvement would be actually integrating the user’s  inputs into the app itself rather than an uploaded CSV file with the expression values. During the development stage, sliders were integrated into the app, but only for the first seven genes. Having the user use two different manuals was redundant, and therefore our team decided on the CSV file.
- 
- 
-Another shortcoming was the risk calculator’s output. Our calculator outputs ‘Stable’ or ‘Rejection’ from three of our classifiers after the user uploads their filled CSV file. The user can be confident when all three classifiers predict the same outcome, but what if one deviates? With nothing to go off from the user is clueless to the actual results, severely impacting the app’s utility. This was solved with the latest modification where the user sees a single outcome. This outcome is derived from the same three models but retrieves the most frequent outcome. This way the user can be confident that at least two models predicted the same outcome.
+eg = bitr(rownames(feat250), fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
+head(eg)
 
 
 
-# Conclusion 
-The goal of this report was to bridge the interdisciplinary fields of omics and data science to create a product where a new standard of renal transplantation treatment is realised. Through the course of our study insights into the vast design workflow of model development and biological visualisations pushed forward the drive for innovation and improvement. The future intends to build off these experiences to produce a product that is functional and applicable to everyday problems. The aim of this whole project is to help with the prediction of post-transplant outcomes and to identify biological immune pathways. 
+eg$ENTREZID
+
+geneLs <- eg$ENTREZID
+geneLs <- sort(geneLs, decreasing = TRUE)
+geneSym <- eg$SYMBOL
+
+
+# making a kegg object:
+
+mkk2 <- enrichKEGG(geneLs,
+                   organism = 'hsa',
+                   pvalueCutoff = 0.05
+)
 
 
 
-# Author's Contributions
-* Aleisha Manalo: Study design, pre-processing the data, building and evaluating the prediction models, pathway enrichment analysis, drafting and contributing to the shiny interface. Integrated biomedical concepts, and documented the use of these. Wrote the following sections: biomedical data and platforms, data collection, data synthesis and analysis, model development, and visualisations for results. Refined and edited the report.
+# end ------------------ pathway analysis ----------------
 
-* Yuan Feng: Draw a draft of figure1 and the draft of the shiny. Creating shiny applications, typesetting and putting all codes and plots written by other team members on the shiny application. Wrote a description and exploration page for this shiny. For presentation, produce the slides and present the innovation part and demonstration part. For the report, wrote the executive summary part. 
 
-* Ivan Shamoon: Wrote code and description for the risk calculator on the input tab on the shiny app. Constructed figure 2. Wrote discussion and conclusion.
-
-* Kam-Suen Kwan: Contributed to initial data exploration code, constructed framework code for KNN, SVM, RF models with accuracy and f1 scores to use for various datasets. Produced some of the shiny app descriptions. Edited final presentation slides. Drafted ‘data collection’ and part of the ‘model development’ sections in the final report. Proofread and edited final report. Edited some weeks of the meeting minutes slides.
-
-* Weiling Xi: Constructed the final Figure 1. Helped with writing the Home Page description of the Shiny app. Presented the Key result part in the presentation. Wrote model development in the report and edited the overall report. 
-
-* Qihang Liu: Attempted to do data collection and data exploration. Attempted in writing some parts of homepage of description of shiny app. Help construct figure 2.
-
-* Zijun Shi: A member of the shiny app, help test and improve the shiny app. Attempted to help complete figure1. The report section helps with executive summary and model development. The presentation part is mainly responsible for aim and enquiry.
+# ------------------------------- END TRAINING DATA SET --------------------------------------------------------------
 
 
 
-# Appendix 
-* [Github](https://github.sydney.edu.au/aman8912/DATA3888_KidneyA6_Git)
-
-* Session Info 
-```{r session info}
-sI <- sessionInfo()
-sI
-```
-
-* [1] Loading R Packages
-```{r loading packages, echo=TRUE, message=FALSE, cache = TRUE, warning=FALSE, eval=FALSE}
-library(GEOquery) 
-library(R.utils)
-library(reshape2)
-library(ggplot2)
-library(limma)
-library(dplyr)
-library(DT)
-library("annotate")
-library("rat2302.db")
-library("Biobase")
-library("biomaRt")
-library("hgu133a.db")
-library("AnnotationDbi")
-library(cvTools)
-library(randomForest)
-library(caret)
-library(ggbiplot)
-library(plotly)
-library(highcharter) 
-library(clusterProfiler)
-library(enrichplot)
-library(ggplot2)
-library(netgsa)
-library(graphite)
-library(data.table)
-library("org.Hs.eg.db", character.only = TRUE)
-library(DOSE)
-library(enrichplot)
-library(ggnewscale)
-library(pathview)
-library(clusterProfiler)
-```
-
-
-* [2] Pre-processing GSE15296
-
-```{r dataset 1 pre-processing, echo=TRUE, message=FALSE, include = TRUE, cache = TRUE, eval=FALSE}
-gset <- getGEO("GSE15296", GSEMatrix =TRUE, getGPL=FALSE)
-if (length(gset) > 1) idx <- grep("GPL570", attr(gset, "names")) else idx <- 1
-gset <- gset[[idx]]
-ex <- exprs(gset)
-# log2 transform
-qx <- as.numeric(quantile(ex, c(0., 0.25, 0.5, 0.75, 0.99, 1.0), na.rm=T))
-LogC <- (qx[5] > 100) ||
-          (qx[6]-qx[1] > 50 && qx[2] > 0)
-if (LogC) { ex[which(ex <= 0)] <- NaN
-  ex <- log2(ex) }
-# Outcome Classes -> Stable/Rejection
-gset$Outcome <- ifelse(grepl("phenotype: Well-functioning kidney transplant", gset$`characteristics_ch1.1`), "Stable", "Rejection")
-table(gset$Outcome)
-```
-
-
-* [3] Converting Affymetrix ID to Gene Symbols (GSE15296)
-Same process for validation dataset. 
-```{r convert affy id to gene symbol, echo=TRUE, message=FALSE, eval=FALSE}
-e <- gset
-mart <- useMart("ENSEMBL_MART_ENSEMBL")
-mart <- useDataset("hsapiens_gene_ensembl", mart)
-annotLookup <- getBM(
-  mart = mart,
-  attributes = c(
-    "affy_hg_u133_plus_2",
-    "ensembl_gene_id",
-    "gene_biotype",
-    "entrezgene_id",
-    "external_gene_name"),
-  filter = "affy_hg_u133_plus_2",
-  values = rownames(exprs(e)),
-  uniqueRows=TRUE)
-order <- which(!duplicated(annotLookup$affy_hg_u133_plus_2))
-annotLookup <- annotLookup[order,]
-Gene <- data.frame(Symbol = annotLookup$external_gene_name, EntrezID = annotLookup$entrezgene_id, row.names = annotLookup$affy_hg_u133_plus_2)
-reorder_idx <- match(rownames(Gene), rownames(e))
-e <- e[reorder_idx,]
-idx <- which(!is.na(Gene$Symbol) & !duplicated(Gene$Symbol))
-e <- e[idx,]
-Gene <- Gene[idx,]
-rownames(e) <- Gene$Symbol
-e <- e[which(rownames(e) != ""),] #get rid of empty rows which don't have a matching gene symbol
-```
-
-
-* [4] Prediction Model: SVM, RF, KNN on Training Dataset 
-```{r prediction model, echo=TRUE, message=FALSE, include = TRUE, cache = TRUE, warning=FALSE, eval=FALSE}
-set.seed(3888)
-X = as.matrix(t(ex))
-y = gset$Outcome
-y <- factor(y, levels = c("Rejection", "Stable")) #outputs a rejection or stable prediction for genes
-# Performing feature selection -> top 50 DE genes
-design <- model.matrix(~y) # just done on the training set
-fit <- eBayes(lmFit(t(X), design)) #transposed
-top50Genes = rownames(topTable(fit, n = 50))
-X <- X[, top50Genes]
-cvK = 5  # number of CV folds
-cv_50acc5_knn = cv_50acc5_svm = cv_50acc5_rf = c()
-cv_acc_knn = cv_acc_svm = cv_acc_rf = c()
-n_sim = 25 ## number of repeats
-for (i in 1:n_sim) {
-  cvSets = cvTools::cvFolds(nrow(X), cvK)  # permute all the data, into 5 folds
-  cv_acc_knn = cv_acc_svm = cv_acc_rf = c()
-  
-  
-  for (j in 1:cvK) {
-    
-    #subsetting the training and test data
-    test_id = cvSets$subsets[cvSets$which == j]
-    X_test = X[test_id, ]
-    X_train = X[-test_id, ]
-    y_test = y[test_id]
-    y_train = y[-test_id]
-    
-  
-    ## KNN
-    fit5 = class::knn(train = X_train, test = X_test, cl = y_train, k = 5)
-    cv_acc_knn[j] = mean(fit5 == y_test)
-   
-    ## SVM
-    svm_res <- e1071::svm(x = X_train, y = as.factor(y_train))
-    fit <- predict(svm_res, X_test)
-    cv_acc_svm[j] = mean(fit == y_test)
-   
-    ## RandomForest
-    rf_res <- randomForest::randomForest(x = X_train, y = as.factor(y_train))
-    fit <- predict(rf_res, X_test)
-    cv_acc_rf[j] = mean(fit == y_test)
-    
-    
-    
-    
-  }
-  cv_50acc5_knn <- append(cv_50acc5_knn, mean(cv_acc_knn))
-  cv_50acc5_svm <- append(cv_50acc5_svm, mean(cv_acc_svm))
-  cv_50acc5_rf <- append(cv_50acc5_rf, mean(cv_acc_rf))
-} ## end for
-```
 
 
 
-* [5] Pre-processing GSE129166
-```{r pre-process and classes for validation, echo=TRUE, message=FALSE, warning=FALSE, include=TRUE, cache=TRUE, eval=FALSE}
+
+
+
+
+
+
+
+
+
+
+
+# testing data set ---------------------------------------------------------------
 gset2 <- getGEO("GSE129166", GSEMatrix =TRUE, getGPL=FALSE)
-if (length(gset2) > 1) idx <- grep("GPL570", attr(gset2, "names")) else idx <- 1
+if (length(gset) > 1) idx <- grep("GPL570", attr(gset2, "names")) else idx <- 1
 gset2 <- gset2[[idx]]
+
 ex2 <- exprs(gset2)
 # log2 transform
 qx <- as.numeric(quantile(ex2, c(0., 0.25, 0.5, 0.75, 0.99, 1.0), na.rm=T))
 LogC <- (qx[5] > 100) ||
-          (qx[6]-qx[1] > 50 && qx[2] > 0)
+  (qx[6]-qx[1] > 50 && qx[2] > 0)
 if (LogC) { ex2[which(ex2 <= 0)] <- NaN
-  ex2 <- log2(ex2) }
-# combine tcmr and abmr for rejection
-# ifelse for tcmr and abmr columns, if both rejection -> R, if both are stable -> stable, if one stable/rejection -> rejection
-tcmr <- gset2$`tcmr (no:ch1`
-abmr <- gset2$`abmr (no:ch1`
-outcome <- 'NA'
-# create dataframe combining two columns: 
-outcome_df <- data.frame(abmr, tcmr, outcome)
-# Looping through dataframe and adding rejection/stable to new column
-for (row in 1:nrow(outcome_df)) {
-  if(grepl("0_Yes:1): 1", outcome_df[row, "abmr"])) {
-    if(grepl("TCMR:2): 1", outcome_df[row, "tcmr"]) || grepl("TCMR:2): 2", outcome_df[row, "tcmr"])) {
-      outcome_df[row, "outcome"] <- "Rejection"
-    } else {
-      # still rejection if abmr is classified as rejection
-      outcome_df[row, "outcome"] <- "Rejection"
-      
-    }
-  } else {
-    outcome_df[row, "outcome"] <- "Stable"
-  } 
-}
-  
-# now we have outcome column -> replace "Outcome" column in gset2
-gset2$Outcome <- outcome_df$outcome
-table(gset2$Outcome)
-```
+ex2 <- log2(ex2) }
 
-* [6] Converting Affymetrix ID to Gene Symbols (GSE129166)
 
-```{r gene symbols validation, echo=TRUE, message=FALSE, include=TRUE, cache=TRUE, warning=FALSE, eval=FALSE}
+# Convert gene id to gene symbol:
+fSet <- fData(gset2)
 e2 <- gset2
 mart <- useMart("ENSEMBL_MART_ENSEMBL")
 mart <- useDataset("hsapiens_gene_ensembl", mart)
@@ -753,84 +354,584 @@ e2 <- e2[idx,]
 Gene <- Gene[idx,]
 rownames(e2) <- Gene$Symbol
 e2 <- e2[which(rownames(e2) != ""),] #get rid of empty rows which don't have a matching gene symbol
-dim(e2)
-```
 
-* [8] Prediction Model: SVM, RF, KNN on Training Dataset 
-```{r validation prediction model, echo=TRUE, message=FALSE, include=TRUE, cache=TRUE, eval=FALSE}
+tcmr <- gset2$`tcmr (no:ch1`
+abmr <- gset2$`abmr (no:ch1`
+outcome <- 'NA'
+# create dataframe combining two columns: 
+outcome_df <- data.frame(abmr, tcmr, outcome)
+outcome_df
+# Looping through dataframe and adding rejection/stable to new column
+for (row in 1:nrow(outcome_df)) {
+  if(grepl("0_Yes:1): 1", outcome_df[row, "abmr"])) {
+    if(grepl("TCMR:2): 1", outcome_df[row, "tcmr"]) || grepl("TCMR:2): 2", outcome_df[row, "tcmr"])) {
+      outcome_df[row, "outcome"] <- "Rejection"
+    } else {
+      # still rejection if abmr is classified as rejection
+      outcome_df[row, "outcome"] <- "Rejection"
+      
+    }
+  } else {
+    outcome_df[row, "outcome"] <- "Stable"
+  } 
+}
+
+# now we have outcome column -> replace "Outcome" column in gset2
+gset2$Outcome <- outcome_df$outcome
+table(gset2$Outcome)
+pData(gset2)
+table(gset2$Outcome)
+gset2_pca <- prcomp(t(ex2), scale. = TRUE)
+df_toplot2 <- data.frame(gset2$Outcome,
+                         pc1 = gset2_pca$x[,1], pc2 = gset2_pca$x[,2])
+featSub2 <- gset2[rownames(e2)%in%top50De,] #top50genes from first dataset (training)
+top50Genes
+# now performing PCA again:
+featSub_pca <- prcomp(t(exprs(featSub2)))
+df_toplot2 <- data.frame(featSub2$Outcome, 
+                         pc1 = featSub_pca$x[,1], pc2 = featSub_pca$x[,2]  )
+
+
+#Prediction
 set.seed(3888)
-X = as.matrix(t(exprs(e2))) # transpose the data matrix
-y = gset2$Outcome # outcome variable containing the levels: Rejection/Stable
-y <- na.omit(y) # remove na values if they exist
-y <- factor(y, levels = c("Rejection", "Stable")) #outputs a rejection or stable prediction for genes
-X <- X[, top50De] #top50Genes from the first dataset 1
-X <- na.omit(X)
-cvK = 5  # number of CV folds
-cv_50acc5_knn = cv_50acc5_svm = cv_50acc5_rf = c()
-cv_acc_knn = cv_acc_svm = cv_acc_rf = c()
-n_sim = 25 ## number of repeats
-for (i in 1:n_sim) {
-  cvSets = cvTools::cvFolds(nrow(X), cvK)  # permute all the data, into 5 folds
-  cv_acc_knn = cv_acc_svm = cv_acc_rf = c()
+X2 = as.matrix(t(exprs(e2)))
+y2 = gset2$Outcome
+y2 <- na.omit(y2)
+y2 <- factor(y2, levels = c("Rejection", "Stable")) #outputs a rejection or stable prediction for genes
+y2
+X2 <- X2[, top50De] #top50Genes from the first dataset 1
+X2 <- na.omit(X2)
+cvK2 = 5  # number of CV folds
+cv_50acc5_knn2 = cv_50acc5_svm2 = cv_50acc5_rf2 = c()
+cv_acc_knn2 = cv_acc_svm2 = cv_acc_rf2 = c()
+f1_50_svm = f1_50_rf = f1_50_knn = c()
+n_sim2 = 25 ## number of repeats
+
+for (i in 1:n_sim2) {
+  cvSets2 = cvTools::cvFolds(nrow(X2), cvK2)  # permute all the data, into 5 folds
+  cv_acc_knn2 = cv_acc_svm2 = cv_acc_rf2 = c()
+  f1_folds_svm = f1_folds_rf = f1_folds_knn = c()
+
   
-  for (j in 1:cvK) {
+  for (j in 1:cvK2) {
     
     #subsetting the training and test data
-    test_id = cvSets$subsets[cvSets$which == j]
-    X_test = X[test_id, ]
-    X_train = X[-test_id, ]
-    y_test = y[test_id]
-    y_train = y[-test_id]
+    test_id2 = cvSets2$subsets[cvSets2$which == j]
+    X_test2 = X2[test_id2, ]
+    X_train2 = X2[-test_id2, ]
+    y_test2 = y2[test_id2]
+    y_train2 = y2[-test_id2]
     
     
     
     ## KNN
-    fit5 = class::knn(train = X_train, test = X_test, cl = y_train, k = 5)
-    cv_acc_knn[j] = mean(fit5 == y_test)
+    fit52 = class::knn(train = X_train2, test = X_test2, cl = y_train2, k = 5)
+    cv_acc_knn2[j] = mean(fit52 == y_test2)
+    f1_knn = F1_Score(y_test2, fit52)
     
     ## SVM
-    svm_res <- e1071::svm(x = X_train, y = as.factor(y_train))
-    fit <- predict(svm_res, X_test)
-    cv_acc_svm[j] = mean(fit == y_test)
+    svm_res2 <- e1071::svm(x = X_train2, y = as.factor(y_train2))
+    fit2 <- predict(svm_res2, X_test2)
+    cv_acc_svm2[j] = mean(fit2 == y_test2)
+    f1_svm = F1_Score(y_test2, fit2)
+    
     ## RandomForest
-    rf_res <- randomForest::randomForest(x = X_train, y = as.factor(y_train))
-    fit <- predict(rf_res, X_test)
-    cv_acc_rf[j] = mean(fit == y_test)
+    rf_res2 <- randomForest::randomForest(x = X_train2, y = as.factor(y_train2))
+    fit2 <- predict(rf_res2, X_test2)
+    cv_acc_rf2[j] = mean(fit2 == y_test2)
+    f1_rf = F1_Score(y_test2, fit2)
+    
+    if (is.nan(f1_knn)) {
+      f1_knn = 0
+    }
+    if (is.na(f1_knn)) {
+      f1_knn = 0
+    }
+    
+        
+    if (is.nan(f1_svm)) {
+      f1_svm = 0
+    }
+    if (is.na(f1_svm)) {
+      f1_svm = 0
+    }
+    
+        
+    if (is.nan(f1_rf)) {
+      f1_rf = 0
+    }
+    if (is.na(f1_rf)) {
+      f1_rf = 0
+    }
+    
+    f1_folds_svm = append(f1_folds_svm, f1_svm)
+    f1_folds_knn = append(f1_folds_knn,f1_knn)
+    f1_folds_rf = append(f1_folds_rf, f1_rf)
+    
   }
-  cv_50acc5_knn <- append(cv_50acc5_knn, mean(cv_acc_knn))
-  cv_50acc5_svm <- append(cv_50acc5_svm, mean(cv_acc_svm))
-  cv_50acc5_rf <- append(cv_50acc5_rf, mean(cv_acc_rf))
+  cv_50acc5_knn2 <- append(cv_50acc5_knn2, mean(cv_acc_knn2))
+  cv_50acc5_svm2 <- append(cv_50acc5_svm2, mean(cv_acc_svm2))
+  cv_50acc5_rf2 <- append(cv_50acc5_rf2, mean(cv_acc_rf2))
+  f1_50_knn = append(f1_50_knn , mean(f1_folds_knn))
+  f1_50_rf = append(f1_50_rf, mean(f1_folds_rf))
+  f1_50_svm = append(f1_50_svm, mean(f1_folds_svm))
 } ## end for
-```
 
-
-* [9] Pathway Enrichment Analysis with Top 250 DE Genes (from Training Data)
-```{r pathway enrichment analysis, echo=TRUE, message=FALSE, include = TRUE, cache=TRUE, warning=FALSE, eval=FALSE}
-organism = "org.Hs.eg.db" #human
-# Store top 50 DE genes in a vector: 
-top250De <- apply(e, 1, var)
-top250De = names(sort(top250De, decreasing = TRUE)[1:250])
-feat250 <- e[rownames(e)%in%top250De,] #top50genes from first dataset (training)
-eg = bitr(rownames(feat250), fromType="SYMBOL", toType="ENTREZID", OrgDb="org.Hs.eg.db")
-geneLs <- eg$ENTREZID
-geneLs <- sort(geneLs, decreasing = TRUE)
-geneSym <- eg$SYMBOL
-# making a kegg object:
-mkk2 <- enrichKEGG(geneLs,
-                 organism = 'hsa',
-                 pvalueCutoff = 0.05
-                )
-```
+f1_knn_2 = round(mean(f1_50_knn),2)
+f1_rf_2 = round(mean(f1_50_rf),2)
+f1_svm_2 = round(mean(f1_50_svm),2)
 
 
 
 
 
 
-# References
+
+
+# Define UI for application that draws a histogram
+ui <- fluidPage(
+  
+  
+  # Application title
+  titlePanel(div("Risk Calculator for Renal Transplant Patients", style = "color: #0492C2")),
+  
+  
+  
+  
+  # --------------------------(NAVBAR)BODY-------------------------------------
+  
+  
+  
+  navbarPage("Calculator",
+             tabPanel("Home",
+                      br(),
+                      h2("Home Page"), br(),
+                      h3("Welcome to the Risk Calculator for Post Renal Transplants"),br(),
+                      "The aim of the calculator is to provide new insights into the prediction of post renal transplant outcomes, and associated biological pathways with significant genes.", br(),
+                      h3("How to use the Calculator"), br(),
+                      h4("1. Click the GSE15296 Training Data tab, there is a menu which contains Description, Exploration, Initial Data Analysis, Classification and Input."),br(),
+                      "Description: Briefly describe the data set , GSE15296, authors used for training.", br(),
+                      "Exploration: Briefly describe what authors did on data cleaning and the distribution of each sample in this training data set.", br(),
+                      "Initial Data Analysis: it contains principle component analysis(PCA), showing the  factors which facilitate the identification of post renal transplant outcomes and the top 50 differentially expressed (DE) genes.", br(),
+                      "Classification: Using three predic models which are SVM, RF and KNN to show the Post Renal Transplant Graft Outcome. ", br(),
+                      "Input: It is a risk Calculator. It allows users to choose gene expression levels and the calculator will give users the prediction result. ", br(),
+                      br(),
+                      h4("2. Click the GSE129166 Validation Data tab, there is a menu which contains Description, Exploration, Initial Data Analysis and Classification. "), br(),
+                      "Description: Briefly describe the data set , GSE129166, authors used for testing.", br(),
+                      "Exploration: Briefly describe what authors did on data cleaning and the distribution of each sample in this testing data set.", br(),
+                      "Initial Data Analysis: Principle Component Analysis (PCA) method and visualisation.", br(),
+                      "Classification: Building the prediction model using SVM, KNN and RF. Cross-validation accuracies are visualised.", br(), 
+                      br(),
+                      h4("3. Click the Pathway Analysis tab. it is about With the use of enrichment pathway analysis on our gene set, this function will return the enrichment KEGG categories and a KEGG pathway map which displays the individual gene interaction and reaction network diagram. This will help to provide better insight during high-throughput biological data research."), br(),
+                      
+                      h4("4. Click the Acknowledge page. This indicates our references."), br(),
+                      
+             ),
+             navbarMenu("GSE15296 Training Data",
+                        tabPanel("Description",
+                                 br(),
+                                 
+                                 h2("Description of GSE15296 Training Data"),br(),
+                                 h4("Peripheral Blood Biomarker Signatures for Acute Kidney Transplant Rejection"), br(),
+                                 "The training data is sourced from the online data repository for functional genomics data, Gene Expression Omnibus (GEO). The training data, GSE15296 explores microarray samples from the peripheral blood of kidney transplant patients. 
+                                 The dimensions of the data include 54675 features, and 75 samples. From genome expression profiling of each blood sample, 51 were classified as acute kidney transplant rejection, and 24 are classified as stable with biopsy-proven normal transplant histology. 
+                                 The rejection classified samples include four subtypes of acute rejection (AR) including: Banff Borderline, IIA, IA, and IB. It is assumed that kidney transplant rejection is not caused by BK nephropathy, other infections, drug-induced nephrotoxicity or ureteral obstruction.", br(),
+                                 br(),
+                                 h4("Data Preparation"), br(),
+                                 "The classification of stable and rejection patients are stored in the ‘characteristic_ch1.1’ variable and string matching was used to identify stable patients from rejection using “phenotype: Well-functioning kidney transplant”. This is stored in a new variable which is passed into the prediction model. The features were stored as affymetrix gene ids, and were converted to gene symbols for better readability using BioMart. The feature size was reduced to 20520 after this conversion, whilst still maintaining the sample size of 75.", br(),
+                                 
+                                 
+                        ), 
+                        tabPanel("Data Exploration", h3("Data Exploration"),
+                                 mainPanel(
+                                   h4("1. Box-and-whisker plot"),br(),
+                                   plotOutput("trainingIDA_boxplot"), br(),
+                                   "Calculate and view the distribution of the selected sample values. 
+                                   The value is the original data provided by the submitter, and geo2r calculation is performed on this basis. 
+                                   Viewing the distribution is important to determine whether the selected samples are suitable for comparison. 
+                                   Generally, values centered on intermediate values indicate that the data is standardized and cross comparable.",
+                                   br(),
+                                   "In this box plot, each sample has a separate box diagram. Through this figure, we can roughly see whether the data has symmetry, 
+                                   the degree of dispersion of distribution and other information.From this figure, we can see that after data cleaning, the median of each sample is close to 4. 
+                                   The height of the box reflects the fluctuation of the data to a certain extent. In this data set, the height difference of each box(sample) is not very large, 
+                                   which means that the fluctuation degree of the data is not very large. There is no outlier in this data set as training dataset.",
+                                   br(),
+                                   h4("2. Mean-variance trend"), br(),
+                                   plotOutput("trainingIDA_distributionplot"),
+                                   "This method shows the distribution of (log2 conversion) count data of all samples and allows easy discovery of problems. 
+                                   This figure shows the sample distribution of all samples.There is no particularly prominent peak or other particularly prominent value in this figure, which basically overlap.",
+                                 )
+                        ), 
+                        tabPanel("Initial Data Analysis",h3("Principal Component Analysis (PCA)"),br(),
+                                 h5("Principle Component Analysis is performed before building the prediction model to explore significant factors in distinguishing a rejection outcome from renal transplantation to a stable outcome. Due to the vast size of the data matrix, and the multitude of components of the microarray, PCA allows a deconstruction of components to focus on the driving factors. The methods used to perform PCA include a comparison between a scatter plot visualisation with and without a filtering method such as feature selection. "),br(),
+                        h5("The first PCA visualisation indicates that there is no significant trend used to distinguish rejection from stable samples. This means that even with a focus on the principle variables in the data, there are currently no driving factors which lead to a rejection or stable outcome. To solve this, a filtering strategy of feature selection to select the top 50 differentially expressed genes is performed."),br(),
+                                 plotlyOutput(outputId = "pca_train_1"),br(),
+                                 
+                                 h5("The second PCA visualisation indicates that after the filtering strategy, which infers that rejection patients have a higher principle component 2 compared to the majority of stable patients, and that there is a slightly clearer separation of points compared to the first PCA."),br(),
+                                
+                                 plotlyOutput(outputId = "pca_train_50")
+                        ), 
+                        tabPanel("Classification", h3("Prediction Model"), br(), h5("The prediction models chosen include Support-vector Machine (SVM), K-Nearest Neighbours (KNN), and Random Forest (RF). The prediction model is given an input of the top 50 differentially expressed genes from the training dataset, and outputs a prediction: Stable, Rejection. The cross-validation accuracies are displayed in the boxplot."),br(),
+                                 plotlyOutput("classifierTrain"),br(),
+                                 
+                        ), 
+                        tabPanel("Input",  
+                                 sidebarLayout(
+                                   sidebarPanel(
+                                     downloadButton('downloadData', 'Download'),
+                                     fileInput("file", "Choose CSV File",
+                                               accept = c(
+                                                 "text/csv",
+                                                 "text/comma-separated-values,text/plain",
+                                                 ".csv")),
+                                   ), 
+                                   mainPanel(
+                                     h1("Risk Calculator"),
+                                     "Explore the likelihood of graft survival using this calculator.",
+                                     h2("Instructions:"),
+                                     "Download the csv to input your desired expression value from 0 to 16 for each of GSE15296's top 50 differentially expressed genes.We initialize each value to 8. You can modify it to what you want.
+                                             Upload the csv and generate an outcome based on our applicable models trained using the top 50 DE matrix. The code will parse the expressions values into our three models where a final outcome based
+                                              on majority votes will be displayed.",
+                                     h2("Outcomes:"),
+                                     "Majority outcome is ",
+                                     strong(textOutput(outputId = "total_prediction", inline = T))))),
+             ),
+             navbarMenu("GSE129166 Validation Data",
+                        tabPanel("Description",
+                                 br(),
+                                 h2("Description of GSE129166 Validation Data"),br(),
+                                 h4("Gene Expression Profiling in Patients With a Kidney Transplantation"), br(),
+                                 "The validation data is sourced from the online data repository for functional genomics data, Gene Expression Omnibus (GEO). 
+                                 The validation data, GSE129166 explores the peripheral blood samples, as well as kidney allograft biopsies to investigate the mRNA expression for renal transplant outcomes. 
+                                 The dimensions of the data include 54675 features, and 212 samples. There are 117 peripheral blood samples, and 95 kidney allograft biopsies. 
+                                 The rejection classified samples include the subtypes: T-cell mediated rejection (TCMR), Banff borderline, and acute cell-mediated allograft rejection (ACMR). There are 52 rejection samples, and 160 stable samples. ", br(),
+                                 br(),
+                                 h4("Data Preparation"), br(),
+                                 "The data is log2 transformed to normalise the expression of genes to ensure proportional changes are modelled.", br(),
+                                 "The rejection and stable phenotype data is extracted from the “tcmr (no:ch1”, and “abmr (no:ch`” variables. The TCMR variable included the banff rejection classification as well as TCMR. String matching was performed to classify stable if both variables displayed “0”, and rejection otherwise. From this, 52 samples were classified as rejection and 150 were stable. The features were stored as affymetrix gene ids, and were converted to gene symbols for better readability using BioMart. The feature size was reduced to 20520 after this conversion, whilst still maintaining the sample size of 212.", br(),
+                                 
+                                 
+                                 
+                        ), 
+                        tabPanel("Exploration",
+                                 mainPanel(
+                                   h4("1. Box-and-whisker plot"),br(),
+                                   plotOutput("testingIDA_boxplot"), br(),
+                                   "Calculate and view the distribution of the selected sample values. 
+                                   The value is the original data provided by the submitter, and geo2r calculation is performed on this basis. 
+                                   Viewing the distribution is important to determine whether the selected samples are suitable for comparison. 
+                                   Generally, values centered on intermediate values indicate that the data is standardized and cross comparable.",
+                                   br(),
+                                   "In this box plot, each sample has a separate box diagram. Through this figure, we can roughly see whether the data has symmetry, 
+                                   the degree of dispersion of distribution and other information.From this figure, we can see that after data cleaning, the median of each sample is close to 5.8. 
+                                   The height of the box reflects the fluctuation of the data to a certain extent. In this data set, the height difference of each box(sample) is not very large, 
+                                   which means that the fluctuation degree of the data is not very large. There is no outlier in this data set as Validation dataset.",
+                                   br(),
+                                   h4("2. Mean-variance trend"), br(),
+                                   plotOutput("testingIDA_distributionplot"),
+                                   "This method shows the distribution of (log2 conversion) count data of all samples and allows easy discovery of problems. 
+                                   This figure shows the sample distribution of all samples.There is no particularly prominent peak or other particularly prominent value in this figure, which basically overlap.",
+                                 )
+                                 ),
+                        tabPanel("Initial Data Analysis", h3("Principal Component Analysis (PCA)"),br(),
+                                 h5("Principle Component Analysis is performed before building the prediction model to explore significant factors in distinguishing a rejection outcome from renal transplantation to a stable outcome. Due to the vast size of the data matrix, and the multitude of components of the microarray, PCA allows a deconstruction of components to focus on the driving factors. The methods used to perform PCA include a comparison between a scatter plot visualisation with and without a filtering method such as feature selection."), br(), 
+                                 h5("The first PCA visualisation indicates two clusters, which can be attributed to the two types of sampling: 1) peripheral blood, 2) kidney biopsy. ") , br(),
+                                 plotlyOutput(outputId = "pca_test_1"),br(),
+                                 h5("This trend is maintained in the PCA visualisation with feature selection."), br(),
+                                 plotlyOutput(outputId = "pca_test_50"), br(),
+                                 ), 
+                        tabPanel("Classification", h3("Prediction Model"), br(), h5("The prediction models chosen include Support-vector Machine (SVM), K-Nearest Neighbours (KNN), and Random Forest (RF). The prediction model is given an input of the top 50 differentially expressed genes from the training dataset, and outputs a prediction: Stable, Rejection. The cross-validation accuracies are displayed in the boxplot."),br(),
+                                 plotlyOutput("classifierTest"),br(),
+                                 
+                        ), 
+             ),
+             
+              tabPanel("Pathway Analysis", br(),
+                                 h2("Gene Pathway Enrichment Analysis"),
+                                 br(),
+                                 h3("Design and Method"),
+                                 br(),
+                                 p("This analysis utilised the top 250 differentially expressed genes extracted from the dataset GSE15296 which contained samples of microarray profiles of peripheral blood from kidney transplant recipients. Functional enrichment analysis was performed using the Kyoto Encyclopedia of Genes and Genomes (KEGG). The parameters for the pathway analysis include:  gene: list of genes in gene symbol format; organism: ‘hsa’; pvalueCutoff: 0.05. 
+The dot plot visualisation shows 25 up-regulated KEGG pathways, with the size of each dot corresponding to the number of genes enriched in the pathway, and the color of each dot represents the level of significance based on the p-adjusted value. 
+The gene-concept network graph depicts the top 6 significant pathways, and the correlation of the top 250 differentially expressed genes between each pathway. The enriched pathways are categorised by colour, with each gene mapped using an undirected edge to a pathway category. The colour of category nodes are tan, and gene nodes are grey. The size of each node corresponds to the number of genes included in the pathway. The genes are labelled according to their gene symbol."),
+                                 
+                                 
+                                 h3("KEGG Pathway Enrichment Analysis Dot Plot"),
+                                 br(),
+                                 
+                                 plotOutput(outputId = "pathway_dotplot"),
+                                 br(),
+                                 h3("Gene-Concept Network for KEGG Pathways"),
+                                 br(),
+                                 plotOutput(outputId = "pathway_network"),
+                                 br(),
+              ),
+             tabPanel("Acknowledgements", br(),
+                      h2("Links of References:"), br(),
+                      "1. GEO Accession viewer. (2022). Retrieved 22 May 2022, from https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE15296", br(),
+                      "2. GEO Accession viewer. (2022). Retrieved 22 May 2022, from https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE129166", br(),
+                      "3. Shiny - Gallery. (2022). Retrieved 22 May 2022, from https://shiny.rstudio.com/gallery/", br(),
+                      "4. Luo, W. and Brouwer C., Pathview: an R/Bioconductor package for pathway-based data integration and visualization. Bioinformatics, 2013, 29(14): 1830-1831, doi: 10.1093/bioinformatics/btt285", br(),
+                      "5. Guangchuang Yu, Li-Gen Wang, Guang-Rong Yan, Qing-Yu He. DOSE: an R/Bioconductor package for Disease Ontology Semantic and Enrichment analysis. Bioinformatics 2015, 31(4):608-609", br(),
+                      ) 
+  ),
+  inverse = T
+)
 
 
 
 
 
+
+# Define server logic required to draw a histogram
+server <- function(input, output,session) {
+  
+  # Create dataframe of excel template
+  data <- reactive({data <- data.frame(gene = NA, expression = rep(8,50))
+  data$gene <- colnames(X)
+  data})
+  
+  # Download button the dataframe to csv
+  output$downloadData <- downloadHandler(
+    filename = function() {
+      paste("userinput",".csv",sep="")
+    },
+    content = function(file) {
+      write.csv(data(), file, row.names = FALSE)
+    }
+  )
+
+  # Render total prediction
+  output$total_prediction <- renderText({
+    req(input$file)
+    inFile <- input$file
+    df <- read.csv(inFile$datapath)
+    rf_res <- randomForest::randomForest(x = X, y = as.factor(y))
+    fit_rf <- predict(rf_res, df$expression)
+    
+    svm_res <- e1071::svm(x = X, y = as.factor(y))
+    svm_data <- data.frame(matrix(8, nrow = 1,ncol = 50))
+    colnames(svm_data) <- df$gene
+    fit_svm <- predict(svm_res, svm_data)
+    
+    fit5 = class::knn(train = X, test = df$expression, cl = y, k = 5)
+    as.vector(fit5)
+    
+    votes = c(as.vector(fit5), as.vector(fit_rf),as.vector(fit_svm))
+    
+    names(which.max(table(votes)))
+  })
+
+  
+  output$distPlot <- renderPlotly({
+    # generate bins based on input$bins from ui.R
+    x    <- faithful[, 2]
+    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+    
+    # draw the histogram with the specified number of bins
+    hist(x, breaks = bins, col = 'darkgray', border = 'white')
+  })
+  
+  output$classifierTrain <- renderPlotly({
+    
+    # classifier accuracy plot 
+    options(highcharter.theme = hc_theme_smpl(tooltip = list(valueDecimals = 2)))
+    
+    acc_df <- data.frame(cv_50acc5_knn, cv_50acc5_svm, cv_50acc5_rf)
+    
+    acc_df$cv_50acc5_knn <- as.factor(acc_df$cv_50acc5_knn)
+    acc_df$cv_50acc5_svm <- as.factor(acc_df$cv_50acc5_svm)
+    acc_df$cv_50acc5_rf <- as.factor(acc_df$cv_50acc5_rf)
+    
+    
+    p <- plot_ly(type = "box")
+    p <- p %>% add_trace(y = acc_df$cv_50acc5_svm, quartilemethod="linear", name = "SVM")
+    p <- p %>% add_trace(y = acc_df$cv_50acc5_knn, quartilemethod="linear", name = "KNN")
+    p <- p %>% add_trace(y = acc_df$cv_50acc5_rf, quartilemethod="linear", name = "RF")
+    
+    p <- p %>% layout(title = "Cross Validation Accuracies for Predicting Transplant Outcomes") 
+    p
+    
+  })
+  
+  # without top 50 de feature selection:
+  output$pca_train_1 <- renderPlotly({
+    gset_pca <- prcomp(t(ex), scale. = TRUE)
+    df_toplot <- data.frame(gset$Outcome, 
+                            pc1 = gset_pca$x[,1], pc2 = gset_pca$x[,2])
+    
+    
+    
+    g <- plot_ly(df_toplot, x = ~pc1, y = ~pc2, color = ~gset.Outcome, colors = c('#FF3131','#466D1D'), type = 'scatter', mode = 'markers') %>%
+      layout(
+        legend=list(title=list(text='Outcome')),
+        plot_bgcolor='#e5ecf6',
+        xaxis = list(
+          title = "PC1",
+          zerolinecolor = "#ffff",
+          zerolinewidth = 1,
+          gridcolor='#ffff'),
+        yaxis = list(
+          title = "PC2",
+          zerolinecolor = "#ffff",
+          zerolinewidth = 1,
+          gridcolor='#ffff'), 
+        title = "[GSE15296] PCA Plot Kidney Transplant Patients") 
+    g 
+    
+  })
+  
+  output$pca_train_50 <- renderPlotly({
+    g <- plot_ly(df_toplot, x = ~pc1, y = ~pc2, color = ~featSub$Outcome, colors = c('#FF3131','#466D1D'), type = 'scatter', mode = 'markers')%>%
+      layout(
+        legend=list(title=list(text='Outcome')),
+        plot_bgcolor='#e5ecf6',
+        xaxis = list(
+          title = "PC1",
+          zerolinecolor = "#ffff",
+          zerolinewidth = 1,
+          gridcolor='#ffff'),
+        yaxis = list(
+          title = "PC2",
+          zerolinecolor = "#ffff",
+          zerolinewidth = 1,
+          gridcolor='#ffff'), 
+        title = "[GSE15296] PCA Plot Kidney Transplant Patients with Top 50 DE Genes") 
+    g 
+    
+  })
+  
+  output$trainingIDA_boxplot <- renderPlot({
+    title <- paste ("GSE15296", "/", annotation(gset), sep ="")
+    boxplot(ex, boxwex=0.7, notch=T, main=title, outline=FALSE, las=2)
+  })
+  
+  output$trainingIDA_distributionplot <- renderPlot({
+    title <- paste ("GSE15296", "/", annotation(gset), " value distribution", sep ="")
+    plotDensities(ex, main=title, legend=F)
+  })
+  
+  output$pathway_dotplot <- renderPlot({
+    dotplot(mkk2, showCategory = 25) + ggtitle("Gene Expression") + scale_y_discrete(guide = guide_axis(check.overlap = TRUE))
+    
+  })
+  
+  output$pathway_network <- renderPlot({
+    options(ggrepel.max.overlaps = Inf)
+    
+    set.seed(1234)
+    # PATHVIEW - user interactivity 
+    #citation("pathview")
+    
+    
+    
+    
+    # change entrez id to gene symbol to be used in the cnet plot -> 
+    kegg <- setReadable(mkk2, 'org.Hs.eg.db', 'ENTREZID')
+    
+    cnetplot(kegg, categorySize="pvalue", foldChange=geneSym, showCategory = 6, colorEdge = TRUE, node_label_size = 1, repel = TRUE, layout = "kk", cex_label_gene = 0.5, cex_category = 0.6) +  ggplot2::labs(title = "Gene-Concept Network for KEGG Pathways") 
+    
+    
+  })
+  
+  output$contents <- renderTable({
+    # table with the expression label of the genes which the user has entered in 
+    req(input$userFile)
+    
+    df <- read.csv(input$userFile$datapath,
+                   header = input$header,
+                   sep = input$sep,
+                   quote = input$quote)
+    
+    if(input$disp == "head") {
+      return(head(df))
+    } else {
+      return(df)
+    }
+  })
+  
+  url1 <- a("GSE15296", href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE15296")
+  output$training_link <- renderUI({
+    tagList("1. Link of Training data set reference:", url1)
+  })
+  
+  output$testingIDA_boxplot <- renderPlot({
+    title <- paste ("GSE129166", "/", annotation(gset2), sep ="")
+    boxplot(ex2, boxwex=0.7, notch=T, main=title, outline=FALSE, las=2)
+  })
+  
+  output$testingIDA_distributionplot <- renderPlot({
+    title <- paste ("GSE129166", "/", annotation(gset2), " value distribution", sep ="")
+    plotDensities(ex2, main=title, legend=F)
+  })
+  
+  # without top 50 de feature selection:
+  output$pca_test_1 <- renderPlotly({
+    df_toplot2 <- data.frame(gset2$Outcome,
+                             pc1 = gset2_pca$x[,1], pc2 = gset2_pca$x[,2])
+    fig <- plot_ly(df_toplot2, x = ~pc1, y = ~pc2, color = ~gset2.Outcome, colors = c('#FF3131','#466D1D'), type = 'scatter', mode = 'markers')%>%
+      layout(
+        legend=list(title=list(text='Outcome')),
+        plot_bgcolor='#e5ecf6',
+        xaxis = list(
+          title = "PC1",
+          zerolinecolor = "#ffff",
+          zerolinewidth = 2,
+          gridcolor='#ffff'),
+        yaxis = list(
+          title = "PC2",
+          zerolinecolor = "#ffff",
+          zerolinewidth = 2,
+          gridcolor='#ffff'), 
+        title = "[GSE129166] PCA Plot Kidney Transplant Patients") 
+    fig
+    
+  })
+
+  output$pca_test_50 <- renderPlotly({
+    fig <- plot_ly(df_toplot2, x = ~pc1, y = ~pc2, color = ~featSub2.Outcome, colors = c('#FF3131','#466D1D'), type = 'scatter', mode = 'markers')%>%
+      layout(
+        legend=list(title=list(text='Outcome')),
+        plot_bgcolor='#e5ecf6',
+        xaxis = list(
+          title = "PC1",
+          zerolinecolor = "#ffff",
+          zerolinewidth = 2,
+          gridcolor='#ffff'),
+        yaxis = list(
+          title = "PC2",
+          zerolinecolor = "#ffff",
+          zerolinewidth = 2,
+          gridcolor='#ffff'), 
+        title = "[GSE129166] PCA Plot Kidney Transplant Patients with Top 50 DE Genes") 
+    fig
+    
+  })
+  
+  output$classifierTest <- renderPlotly({
+    
+    # classifier accuracy plot 
+    options(highcharter.theme = hc_theme_smpl(tooltip = list(valueDecimals = 2)))
+    
+    acc_df2 <- data.frame(cv_50acc5_knn2, cv_50acc5_svm2, cv_50acc5_rf2)
+    
+    acc_df2$cv_50acc5_knn2 <- as.factor(acc_df2$cv_50acc5_knn2)
+    acc_df2$cv_50acc5_svm2 <- as.factor(acc_df2$cv_50acc5_svm2)
+    acc_df2$cv_50acc5_rf2 <- as.factor(acc_df2$cv_50acc5_rf2)
+    
+    
+    p <- plot_ly(type = "box")
+    p <- p %>% add_trace(y = acc_df2$cv_50acc5_svm2, quartilemethod="linear", name = "SVM")
+    p <- p %>% add_trace(y = acc_df2$cv_50acc5_knn2, quartilemethod="linear", name = "KNN")
+    p <- p %>% add_trace(y = acc_df2$cv_50acc5_rf2, quartilemethod="linear", name = "RF")
+    
+    p <- p %>% layout(title = "Cross Validation Accuracies for Predicting Transplant Outcomes") 
+    p
+    
+  })
+  
+}
+
+# Run the application 
+shinyApp(ui = ui, server = server) 
 
