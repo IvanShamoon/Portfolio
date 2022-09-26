@@ -12,3 +12,10 @@ This project deploys a variety of text processing and machine learning tools to 
 * Text processing
 * Machine learning classifiers 
 [Anime or Adult Anime?](docs/job_scrap.ipynb)
+
+
+[a link](https://github.com/user/repo/blob/branch/other_file.md)
+…you can use a relative link:
+
+[a relative link](other_file.md)
+[a relative link](path%20with%20spaces/other_file.md)
