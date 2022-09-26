@@ -11,4 +11,4 @@ This project deploys a variety of text processing and machine learning tools to 
 * Data Cleaning
 * Text processing
 * Machine learning classifiers 
-[Anime or Adult Anime?](docs/CONTRIBUTING.md)
+[Anime or Adult Anime?](docs/job_scrap.ipynb)
