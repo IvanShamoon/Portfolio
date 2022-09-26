@@ -24,7 +24,7 @@ This project aims to determine if the social factors of each of the seven contin
 * Machine learning (k-means)
 * PCA
 * Ploty
-* Web Scraping (BeautifulSoup and Selenium)
+* [Web Scraping (BeautifulSoup and Selenium)](https://github.com/IvanShamoon/Portfolio/blob/main/Social_factors_clustering/social_factors_scrap.ipynb)
 * Data Cleaning
 * Text processing
 
