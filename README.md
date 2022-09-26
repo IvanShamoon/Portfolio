@@ -76,3 +76,8 @@ This project is a personal project analysing the famous Titantic dataset, and wa
 ## Project Objective
 Reveal insighful information through data about the passengers of the Titanic tragedy and to use machine learning classifiers to predict whether a passenger survived or not.
 
+## Methods Used
+* Machine Learning Classifiers 
+* Data Cleaning
+* Chi-squared test
+* Adjusted p-value
