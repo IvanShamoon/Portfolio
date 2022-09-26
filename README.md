@@ -14,7 +14,7 @@ This project deploys a variety of text processing and machine learning tools to 
 [Anime or Adult Anime?](docs/job_scrap.ipynb)
 
 
-[a link](https://github.com/user/repo/blob/branch/other_file.md)
+[a link](https://github.com/IvanShamoon/Testubg/blob/main/job_scrap.ipynb)
 …you can use a relative link:
 
 [a relative link](other_file.md)
