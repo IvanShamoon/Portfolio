@@ -1,6 +1,10 @@
+[xxxx](#Project Objective)
+
+
+
 # [Anime or  Adult Anime?](https://github.com/IvanShamoon/Testubg/blob/main/job_scrap.ipynb)
 
-This is a personal project inspired by course work for text processing and machine learning. It is influenced by the binary comparison of spam and ham, and engages with an area many are interested in.
+This is a personal project inspired by course work to use text processing and machine learning. It is influenced by the binary comparison of spam and ham, and engages with an area many are interested in. 
 
 ## Project Objective
 
@@ -19,3 +23,7 @@ This project deploys a variety of text processing and machine learning tools to 
 
 [a relative link](other_file.md)
 [a relative link](path%20with%20spaces/other_file.md)
+
+Attempt | #1 | #2 | #3 | #4 | #5 | #6 | #7 | #8 
+
+Seconds | 301 | 283 | 290 | 286 | 289 | 285 | 287 | 287 
