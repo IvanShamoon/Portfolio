@@ -11,3 +11,4 @@ This project deploys a variety of text processing and machine learning tools to 
 * Data Cleaning
 * Text processing
 * Machine learning classifiers 
+(docs/CONTRIBUTING.md)
