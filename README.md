@@ -12,7 +12,7 @@ This is a repository of all largescale personal projects and course work I have 
 - [Titanic Analysis](#titanic-dataset-analysis)
 
 
-# Country Social Factor Clustering
+# [Country Social Factor Clustering](https://nbviewer.org/github/IvanShamoon/Portfolio/blob/main/social_cluster.ipynb)
 This is a personal project made to examine the social factors of all countries and to deploy unsupervised machine learning techniques to create clusters. Through these techniques I managed to optimize models and create insightful clusters. The data is sourced through webscraping using the automated tool in Selenium and the other library in BeautifulSoup. The final project is ready to deploy into PowerBi.
 
 ## Project Objective
@@ -29,7 +29,7 @@ This project aims to determine if the social factors of each of the seven contin
 * Text processing
 
 
-# [Anime or Adult Anime?](https://github.com/IvanShamoon/Testubg/blob/main/job_scrap.ipynb)
+# [Anime or Adult Anime?](https://github.com/IvanShamoon/Portfolio/blob/main/Anime_scarpe/anime_or_adult_anime.ipynb)
 This is a personal project inspired by course work to use text processing and machine learning. It is influenced by the binary comparison of spam and ham, and engages with an area many are interested in, anime. It examines the textual differences of anime and adult anime from summaries as listed from the cite [MyAnimeList](https://myanimelist.net/).
 
 ## Project Objective
@@ -42,7 +42,7 @@ This project deploys a variety of text processing and machine learning tools to 
 * Text processing
 * Machine learning classifiers 
 
-# LinkedIn Australian Data Job Scrape
+# [LinkedIn Australian Data Job Scrape](https://github.com/IvanShamoon/Portfolio/blob/main/Job_scrape/job_scrap.ipynb)
 This is a personal project made to gain insight on the state of data science/analysis job listing in Australia. My main intention was to develop my web scarping abilities by learning how to use the automated tool Selenium. The data is ready to deploy onto PowerBi for better visualisation.
 
 
@@ -55,7 +55,7 @@ This projects uses a variables of methods using Selenium to scrape off LinkedIn 
 * Data Cleaning
 
 
-# Risk Calculator for Kidney Transplantation
+# [Risk Calculator for Kidney Transplantation](https://kidneya6data3888.shinyapps.io/Data3888/)
 This is a course project where we  were assigned the task to create a useful tool using gene expression data from patients. The team decided on a risk calulator deployed through Shiny R which takes in gene expression from a user's input to predict whether a certian collection of gene expression calulators a stable/rejection or kidney transplatation.
 
 
@@ -70,7 +70,7 @@ This projects uses a variety of libraries and tools within R to analyse gene exp
 * Linking symbol and gene name
 * PCA
 
-# Titanic Dataset Analysis
+# [Titanic Dataset Analysis](https://github.com/IvanShamoon/Portfolio/blob/main/Titanic/titanic.ipynb)
 This project is a personal project analysing the famous Titantic dataset, and was one of the first elementary datasets used to develop my data knowledge and tools deployment. 
 
 ## Project Objective
