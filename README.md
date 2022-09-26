@@ -1,4 +1,4 @@
-# Anime or  Adult Anime?
+# [Anime or  Adult Anime?](https://github.com/IvanShamoon/Testubg/blob/main/job_scrap.ipynb)
 
 This is a personal project inspired by course work for text processing and machine learning. It is influenced by the binary comparison of spam and ham, and engages with an area many are interested in.
 
