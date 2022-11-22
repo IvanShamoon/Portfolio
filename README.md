@@ -13,10 +13,13 @@ This is a repository of all largescale personal projects and course work I have 
 
 
 # [Country Social Factor Clustering](https://nbviewer.org/github/IvanShamoon/Portfolio/blob/main/social_cluster.ipynb)
-This is a personal project made to examine the social factors of all countries and to deploy unsupervised machine learning techniques to create clusters. Through these techniques I managed to optimize models and create insightful clusters. The data is sourced through webscraping using the automated tool in Selenium and the other library in BeautifulSoup. The final project is ready to deploy into PowerBi.
+This is a personal project made to examine the social factors of all countries and to deploy unsupervised machine learning techniques to create clusters. Through these techniques I managed to optimize models and create insightful clusters. The data is sourced through webscraping using the automated tool in Selenium and the other library in BeautifulSoup. The final project deployed onto PowerBi.
+
+## [Dashboard ](https://github.com/IvanShamoon/Portfolio/blob/main/Social_factors_clustering/Country_clustering_dashboard.pdf)
+This dashboard provides a clear visualisation for the data. The first page explores initial observations and the second pages explores the clustering analysis, and finally the final verdict reguarding the project's hypothesis. A PDF is provided because I lack the Microsoft's license.
+
 
 ## Project Objective
-
 This project aims to determine if the social factors of each of the seven continents is distinctive enough to create their own clusters within the unsupervised learning process. In addition, I hope to optimize clustering through PCA and K-means using metrics such as inertia and variance explained. This project also hopes to provide visual aids and all around a descriptions of the final clusters and to perhaps piece them to their respective continent. 
 
 
@@ -45,8 +48,8 @@ This project deploys a variety of text processing and machine learning tools to 
 # [LinkedIn Australian Data Job Scrape](https://github.com/IvanShamoon/Portfolio/blob/main/Job_scrape/job_scrap.ipynb)
 This is a personal project made to gain insight on the state of data science/analysis job listing in Australia. My main intention was to develop my web scarping abilities by learning how to use the automated tool Selenium. The data is deploy onto PowerBi for better visualisation and interactivity.
 
-## Dashboard description
-This dashboard provides a hoslitics representation of the data. It is interactive allowing users to choose Australia states/industry to view initial observations in terms of common words/language/tools. A PDF is provided because I lack a license. 
+## [Dashboard](https://github.com/IvanShamoon/Portfolio/blob/main/Job_scrape/LinkedIn_jobscrap_dashboard.pdf)
+This dashboard provides a hoslitics representation of the data. It is interactive allowing users to choose Australia states/industry to view initial observations in terms of common words/language/tools. A PDF is provided because I lack the Microsoft's license.
 
 ## Project Objective
 This projects uses a variables of methods using Selenium to scrape off LinkedIn job listing. The chanllenge of this task was selecting item within the cite that is not immediately avaliable when clicking. It makes use of wait time and xpath to extract important information and to finally gather infromation for our the project's aim.
