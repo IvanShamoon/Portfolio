@@ -43,8 +43,10 @@ This project deploys a variety of text processing and machine learning tools to 
 * Machine learning classifiers 
 
 # [LinkedIn Australian Data Job Scrape](https://github.com/IvanShamoon/Portfolio/blob/main/Job_scrape/job_scrap.ipynb)
-This is a personal project made to gain insight on the state of data science/analysis job listing in Australia. My main intention was to develop my web scarping abilities by learning how to use the automated tool Selenium. The data is ready to deploy onto PowerBi for better visualisation.
+This is a personal project made to gain insight on the state of data science/analysis job listing in Australia. My main intention was to develop my web scarping abilities by learning how to use the automated tool Selenium. The data is deploy onto PowerBi for better visualisation and interactivity.
 
+## Dashboard description
+This dashboard provides a hoslitics representation of the data. It is interactive allowing users to choose Australia states/industry to view initial observations in terms of common words/language/tools. A PDF is provided because I lack a license. 
 
 ## Project Objective
 This projects uses a variables of methods using Selenium to scrape off LinkedIn job listing. The chanllenge of this task was selecting item within the cite that is not immediately avaliable when clicking. It makes use of wait time and xpath to extract important information and to finally gather infromation for our the project's aim.
@@ -53,7 +55,7 @@ This projects uses a variables of methods using Selenium to scrape off LinkedIn 
 ## Methods Used
 * Web Scraping (Selenium)
 * Data Cleaning
-
+* Power Bi
 
 # [Risk Calculator for Kidney Transplantation](https://kidneya6data3888.shinyapps.io/Data3888/)
 This is a course project where we  were assigned the task to create a useful tool using gene expression data from patients. The team decided on a risk calulator deployed through Shiny R which takes in gene expression from a user's input to predict whether a certian collection of gene expression calulators a stable/rejection or kidney transplatation.
