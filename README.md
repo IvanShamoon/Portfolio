@@ -7,6 +7,7 @@ This is a repository of all largescale personal projects and course work I have 
 
 - [Country Social Factor Clustering](#country-social-factor-clustering)
 - [Anime or  Adult Anime?](#anime-or-adult-anime)
+- [Reddit Subreddits New Posts and Load Onto Google BigQuery](#Reddit-Subreddits-New-Posts-and-Load-Onto-Google-BigQuery)
 - [Risk Calculator for Kidney Transplantation](#risk-calculator-for-kidney-transplantation)
 - [LinkedIn Australian Data Job Scrape](#linkedin-australian-data-job-scrape)
 - [Titanic Analysis](#titanic-dataset-analysis)
@@ -44,6 +45,20 @@ This project deploys a variety of text processing and machine learning tools to 
 * Data Cleaning
 * Text processing
 * Machine learning classifiers 
+
+# [Reddit Subreddits New Posts and Load Onto Google BigQuery](https://github.com/IvanShamoon/Portfolio/blob/main/Reddit_scrape/reddit_get.py)
+This is a personal project practicing the ETL process. The data is scarped off Reddit from the subreddits's new post off: AskReddit, TooAfraidTooAsk, and explainlikeimfive. This data is cleaned and transformed, and loaded onto BigQuery. The script was ran once an hour through task scheduler getting a range of posts from sepcific dates.
+
+## Project Objective
+
+The project is a learning experience as a junior data engineer learning the functions and in and outs of Google Cloud dataware house BigQuery. After the data is loaded onto the database, the user can then run SQL queries on the data. 
+
+## Methods Used
+* Selenium
+* Data Cleaning
+* Big Query
+* Google Cloud
+* ETL
 
 # [LinkedIn Australian Data Job Scrape](https://github.com/IvanShamoon/Portfolio/blob/main/Job_scrape/job_scrap.ipynb)
 This is a personal project made to gain insight on the state of data science/analysis job listing in Australia. My main intention was to develop my web scarping abilities by learning how to use the automated tool Selenium. The data is deploy onto PowerBi for better visualisation and interactivity.
