@@ -8,7 +8,7 @@ This is a repository of all largescale personal projects and course work I have 
 - [Country Social Factor Clustering](#country-social-factor-clustering)
 - [Anime or  Adult Anime?](#anime-or-adult-anime)
 - [Reddit Subreddits New Posts and Load Onto Google BigQuery](#Reddit-Subreddits-New-Posts-and-Load-Onto-Google-BigQuery)
-- [Apache Kafka movie/tv show stream onto AWS S3](#Apache-Kafka-movie/tv-show-stream-onto-AWS-S3)
+- [Apache Kafka movie/tv show stream onto AWS S3](#Apache-Kafka-movie-and-tv-show-stream-onto-AWS-S3)
 - [Risk Calculator for Kidney Transplantation](#risk-calculator-for-kidney-transplantation)
 - [LinkedIn Australian Data Job Scrape](#linkedin-australian-data-job-scrape)
 - [Titanic Analysis](#titanic-dataset-analysis)
@@ -61,7 +61,7 @@ The project is a learning experience as a junior data engineer learning the func
 * Google Cloud
 * ETL
 
-# [Apache Kafka movie/tv show stream onto AWS S3](https://github.com/IvanShamoon/Portfolio/blob/main/Kafka_movie_streaming/Kafka-data-produce.ipynb)
+# [Apache Kafka movie and tv show stream onto AWS S3](https://github.com/IvanShamoon/Portfolio/tree/main/Kafka_movie_streaming)
 This is a personal project learning about the streaming data processing tool Apache Kafka. The data streamed onto kafka is off this rest api: [movie api](https://developers.themoviedb.org/3/movies). For Kafka to function, linix virtual machines were set-up running the zookeeper, server, producer, and consumer. The script retrieves this data and loads onto a S3 bucket. After the script is manually shut off, the user crawls the data using AWS Glue onto its finish productive state. Within this state, a user can run SQL queries off it. The creds module is a separete py file containing senitive information.
 
 ## Project Objective
