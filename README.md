@@ -8,6 +8,7 @@ This is a repository of all largescale personal projects and course work I have 
 - [Country Social Factor Clustering](#country-social-factor-clustering)
 - [Anime or  Adult Anime?](#anime-or-adult-anime)
 - [Reddit Subreddits New Posts and Load Onto Google BigQuery](#Reddit-Subreddits-New-Posts-and-Load-Onto-Google-BigQuery)
+- [Kafka movie/tv show stream onto AWS S3](#Kafka-movie/tv-show-stream-onto-AWS-S3)
 - [Risk Calculator for Kidney Transplantation](#risk-calculator-for-kidney-transplantation)
 - [LinkedIn Australian Data Job Scrape](#linkedin-australian-data-job-scrape)
 - [Titanic Analysis](#titanic-dataset-analysis)
@@ -59,6 +60,22 @@ The project is a learning experience as a junior data engineer learning the func
 * Big Query
 * Google Cloud
 * ETL
+
+# [Kafka movie/tv show stream onto AWS S3](https://github.com/IvanShamoon/Portfolio/blob/main/Kafka_movie_streaming/Kafka-data-produce.ipynb)
+This is a personal project learning about the streaming data processing tool Apache Kafka. The data streamed onto kafka is off this rest api: [movie api](https://developers.themoviedb.org/3/movies). For Kafka to function, linix virtual machines were set-up running the zookeeper, server, producer, and consumer. The script retrieves this data and loads onto a S3 bucket. After the script is manually shut off, the user crawls the data using AWS Glue onto its finish productive state. Within this state, a user can run SQL queries off it. The creds module is a separete py file containing senitive information.
+
+## Project Objective
+
+This project is a learning experience for Apache Kafka, AWS, S3, and AWS Glue. The goal was to build the kafka process from scratch learning about the concusmer and producer, and in addition learning about the inevitable errors one enouters when setting up the zookeeper and server. The goal was also to try out S3 bucket, previously only having expeirence with Google Cloud's bucket. And lastly seeing how json files can be glued together onto a ready to analysed format to run queries on.
+
+## Methods Used
+* s3
+* AWS Glue
+* Apache Kafka
+* Rest API
+* Virtual machines
+* Streaming data
+
 
 # [LinkedIn Australian Data Job Scrape](https://github.com/IvanShamoon/Portfolio/blob/main/Job_scrape/job_scrap.ipynb)
 This is a personal project made to gain insight on the state of data science/analysis job listing in Australia. My main intention was to develop my web scarping abilities by learning how to use the automated tool Selenium. The data is deploy onto PowerBi for better visualisation and interactivity.
