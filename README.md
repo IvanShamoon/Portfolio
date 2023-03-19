@@ -8,7 +8,7 @@ This is a repository of all largescale personal projects and course work I have 
 - [Country Social Factor Clustering](#country-social-factor-clustering)
 - [Anime or  Adult Anime?](#anime-or-adult-anime)
 - [Reddit Subreddits New Posts and Load Onto Google BigQuery](#Reddit-Subreddits-New-Posts-and-Load-Onto-Google-BigQuery)
-- [Kafka movie/tv show stream onto AWS S3](#Kafka-movie/tv-show-stream-onto-AWS-S3)
+- [Apache Kafka movie/tv show stream onto AWS S3](#Kafka-movie/tv-show-stream-onto-AWS-S3)
 - [Risk Calculator for Kidney Transplantation](#risk-calculator-for-kidney-transplantation)
 - [LinkedIn Australian Data Job Scrape](#linkedin-australian-data-job-scrape)
 - [Titanic Analysis](#titanic-dataset-analysis)
