@@ -21,10 +21,8 @@ This is a personal project made to examine the social factors of all countries a
 ## [Dashboard ](https://github.com/IvanShamoon/Portfolio/blob/main/Social_factors_clustering/Country_clustering_dashboard.pdf)
 This dashboard provides a clear visualization for the data. The first page explores initial observations and the second page explores the clustering analysis, and finally the final verdict regarding the project's hypothesis. A PDF is provided because I lack Microsoft's license.
 
-
 ## Project Objective
 This project aims to determine if the social factors of each of the seven continents is distinctive enough to create their own clusters within the unsupervised learning process. In addition, I hope to optimize clustering through PCA and K-means using metrics such as inertia and variance explained. This project also hopes to provide visual aids and all around descriptions of the final clusters and to perhaps piece them to their respective continent. 
-
 
 ## Methods Used
 * Machine learning (k-means)
@@ -53,7 +51,6 @@ This project deploys a variety of text processing and machine learning tools to 
 This project demonstrates my dashboard design development against my previous work on here. It showcases a host of information from a variety of countries around the world based on certain features. These features are deemed by myself as dangerous/unsafe. This data is then clustered with k-means clustering for segmentation, and from there can be used for interesting insights. Page one provides geographic visuals for these segments along with the leading indicator metrics, page two provides two time-series graphs with more statistics, and page three provides an interactive option to compare country against country.  
 
 ## Project Objective
-
 Explore visualizations methods in Power BI for the information. Provide a non-bias presentation on what makes up a safe or unsafe location, and what characteristics differentiate these segments. The data is extracted from a variety of sources to minimize bias. 
 
 ## Methods Used
