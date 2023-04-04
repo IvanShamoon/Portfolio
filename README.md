@@ -7,7 +7,7 @@ This is my repository for all largescale projects and work I have completed. An 
 
 - [Country Social Factor Clustering](#country-social-factor-clustering)
 - [Anime or  Adult Anime?](#anime-or-adult-anime)
-- [How different are "Safe" to "Unsafe" countries?](#How-Different-are-"Safe"-to-"Unsafe"-countries)
+- [How different are "Safe" to "Unsafe" countries?](#How-different-are-"Safe"-to-"Unsafe"-countries?)
 - [Reddit Subreddits New Posts and Load Onto Google BigQuery](#Reddit-Subreddits-New-Posts-and-Load-Onto-Google-BigQuery)
 - [Apache Kafka movie/tv show stream onto AWS S3](#Apache-Kafka-movie-and-tv-show-stream-onto-AWS-S3)
 - [Risk Calculator for Kidney Transplantation](#risk-calculator-for-kidney-transplantation)
@@ -49,8 +49,6 @@ This project deploys a variety of text processing and machine learning tools to 
 * Machine learning classifiers 
 
 # [How different are "Safe" to "Unsafe" countries?](https://github.com/IvanShamoon/Portfolio/blob/main/Country-stats-PowerBI/Dashboard.pdf)
-(Sorry for the poor pdf quality)
-
 This project demonstrates my dashboard design development against my previous work on here. It showcases a host of information from a variety of countries around the world based on certain features. These features are deemed by myself as dangerous/unsafe. This data is then clustered with k-means clustering for segementation, and from there can be used for interesting insights. Page one provides geographic visuals for these segements along with the leading indicator metrics, page two provides two time-series graphs with more statistics, and page three provides a interactive option to compare country against country.
 
 ## Project Objective
