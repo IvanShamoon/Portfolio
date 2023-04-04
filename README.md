@@ -1,12 +1,13 @@
 # Ivan Shamoon's Portfolio
 
 ## About
-This is a repository of all largescale personal projects and course work I have completed over my time learning and developing my toolset in Data Science. This repository will continually be updated will all the work I am proud to present to the public. It hopes to reflect the vast learning curve of data science of which I hope to cultivate and grow over time
+This is my repository for all largescale projects and work I have completed. An index for all things ranging from study, passion, and challenge. The goal of this respository is to hopefully showcases my jounrney working with data from scientist, analyst, and engineer, and the catalougue I have built over the years.
 
 ## Table of contents
 
 - [Country Social Factor Clustering](#country-social-factor-clustering)
 - [Anime or  Adult Anime?](#anime-or-adult-anime)
+- [How different are "Safe" to "Unsafe" countries?](#How-Different-are-"Safe"-to-"Unsafe"-countries)
 - [Reddit Subreddits New Posts and Load Onto Google BigQuery](#Reddit-Subreddits-New-Posts-and-Load-Onto-Google-BigQuery)
 - [Apache Kafka movie/tv show stream onto AWS S3](#Apache-Kafka-movie-and-tv-show-stream-onto-AWS-S3)
 - [Risk Calculator for Kidney Transplantation](#risk-calculator-for-kidney-transplantation)
@@ -46,6 +47,20 @@ This project deploys a variety of text processing and machine learning tools to 
 * Data Cleaning
 * Text processing
 * Machine learning classifiers 
+
+# [How different are "Safe" to "Unsafe" countries?](https://github.com/IvanShamoon/Portfolio/blob/main/Country-stats-PowerBI/Dashboard.pdf)
+(Sorry for the poor pdf quality)
+
+This is a project showing my dashboard design development against my previous work on here. It showcases a host of information from a variety of countries around the world based on certain features. These features are deemed by myself as dangerous/unsafe. This data is then clustered with k-means clustering for segementation. From here interesting insights can be made based off the segments and information around the web.
+
+## Project Objective
+
+Explore visualisations methods in Power BI for the information. Provide a non-bias presentation on what makes up a safe or unsafe location, and what characteriscs differentiate these segments. The data is extracted from a varity of sources to minimize bias. 
+
+## Methods Used
+* Web Scraping (Selenium/Beautiful Soup)
+* Power BI
+* K-Means Clustering 
 
 # [Reddit Subreddits New Posts and Load Onto Google BigQuery](https://github.com/IvanShamoon/Portfolio/blob/main/Reddit_scrape/reddit_get.py)
 This is a personal project practicing the ETL process. The data is scarped off Reddit from the subreddits's new post off: AskReddit, TooAfraidTooAsk, and explainlikeimfive. This data is cleaned and transformed, and loaded onto BigQuery. The script was ran once an hour through task scheduler getting a range of posts from sepcific dates.
