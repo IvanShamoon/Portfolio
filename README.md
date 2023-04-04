@@ -1,7 +1,7 @@
 # Ivan Shamoon's Portfolio
 
 ## About
-This is my repository for all largescale projects and work I have completed. An index for all things ranging from study, passion, and challenge. The goal of this respository is to hopefully showcases my jounrney working with data from scientist, analyst, and engineer, and the catalougue I have built over the years.
+This is my repository for all large scale projects and work I have completed. An index for all things ranging from study, passion, and challenge. The goal of this repository is to hopefully showcase my journey working with data roles from scientists, analysts, and engineer, and the catalog I have built over the years.
 
 ## Table of contents
 
@@ -19,11 +19,11 @@ This is my repository for all largescale projects and work I have completed. An 
 This is a personal project made to examine the social factors of all countries and to deploy unsupervised machine learning techniques to create clusters. Through these techniques I managed to optimize models and create insightful clusters. The data is sourced through webscraping using the automated tool in Selenium and the other library in BeautifulSoup. The final project deployed onto PowerBi.
 
 ## [Dashboard ](https://github.com/IvanShamoon/Portfolio/blob/main/Social_factors_clustering/Country_clustering_dashboard.pdf)
-This dashboard provides a clear visualisation for the data. The first page explores initial observations and the second pages explores the clustering analysis, and finally the final verdict reguarding the project's hypothesis. A PDF is provided because I lack the Microsoft's license.
+This dashboard provides a clear visualization for the data. The first page explores initial observations and the second page explores the clustering analysis, and finally the final verdict regarding the project's hypothesis. A PDF is provided because I lack Microsoft's license.
 
 
 ## Project Objective
-This project aims to determine if the social factors of each of the seven continents is distinctive enough to create their own clusters within the unsupervised learning process. In addition, I hope to optimize clustering through PCA and K-means using metrics such as inertia and variance explained. This project also hopes to provide visual aids and all around a descriptions of the final clusters and to perhaps piece them to their respective continent. 
+This project aims to determine if the social factors of each of the seven continents is distinctive enough to create their own clusters within the unsupervised learning process. In addition, I hope to optimize clustering through PCA and K-means using metrics such as inertia and variance explained. This project also hopes to provide visual aids and all around descriptions of the final clusters and to perhaps piece them to their respective continent. 
 
 
 ## Methods Used
@@ -36,11 +36,11 @@ This project aims to determine if the social factors of each of the seven contin
 
 
 # [Anime or Adult Anime?](https://github.com/IvanShamoon/Portfolio/blob/main/Anime_scarpe/anime_or_adult_anime.ipynb)
-This is a personal project inspired by course work to use text processing and machine learning. It is influenced by the binary comparison of spam and ham, and engages with an area many are interested in, anime. It examines the textual differences of anime and adult anime from summaries as listed from the cite [MyAnimeList](https://myanimelist.net/).
+This is a personal project inspired by coursework to use text processing and machine learning. It is influenced by the binary comparison of spam and ham, and engages with an area many are interested in, anime. It examines the textual differences of anime and adult anime from summaries as listed from the cite [MyAnimeList](https://myanimelist.net/).
 
 ## Project Objective
 
-This project deploys a variety of text processing and machine learning tools to investigate whether there's any differences between the summaries of Anime and Adult Anime. The main intention was of personal development in terms of data. However, there is no doubt an interest of the differences between these two bodies of work. Do certain genres engages more with wordplay than the other genre? Do certain words populate a genre more than the others? These questions are the main tenents of this project.
+This project deploys a variety of text processing and machine learning tools to investigate whether there's any differences between the summaries of Anime and Adult Anime. The main intention was personal development in terms of data. However, there is no doubt an interest in the differences between these two bodies of work. Do certain genres engage more with wordplay than the other genre? Do certain words populate a genre more than the others? These questions are the main tenets of this project.
 
 ## Methods Used
 * Web Scraping (BeautifulSoup)
@@ -48,20 +48,22 @@ This project deploys a variety of text processing and machine learning tools to 
 * Text processing
 * Machine learning classifiers 
 
+
 # [How different are "Safe" to "Unsafe" countries?](https://github.com/IvanShamoon/Portfolio/blob/main/Country-stats-PowerBI/Dashboard.pdf)
-This project demonstrates my dashboard design development against my previous work on here. It showcases a host of information from a variety of countries around the world based on certain features. These features are deemed by myself as dangerous/unsafe. This data is then clustered with k-means clustering for segementation, and from there can be used for interesting insights. Page one provides geographic visuals for these segements along with the leading indicator metrics, page two provides two time-series graphs with more statistics, and page three provides a interactive option to compare country against country.
+This project demonstrates my dashboard design development against my previous work on here. It showcases a host of information from a variety of countries around the world based on certain features. These features are deemed by myself as dangerous/unsafe. This data is then clustered with k-means clustering for segmentation, and from there can be used for interesting insights. Page one provides geographic visuals for these segments along with the leading indicator metrics, page two provides two time-series graphs with more statistics, and page three provides an interactive option to compare country against country.  
 
 ## Project Objective
 
-Explore visualisations methods in Power BI for the information. Provide a non-bias presentation on what makes up a safe or unsafe location, and what characteriscs differentiate these segments. The data is extracted from a varity of sources to minimize bias. 
+Explore visualizations methods in Power BI for the information. Provide a non-bias presentation on what makes up a safe or unsafe location, and what characteristics differentiate these segments. The data is extracted from a variety of sources to minimize bias. 
 
 ## Methods Used
 * Web Scraping (Selenium/Beautiful Soup)
 * Power BI
 * K-Means Clustering 
 
+
 # [Reddit Subreddits New Posts and Load Onto Google BigQuery](https://github.com/IvanShamoon/Portfolio/blob/main/Reddit_scrape/reddit_get.py)
-This is a personal project practicing the ETL process. The data is scarped off Reddit from the subreddits's new post off: AskReddit, TooAfraidTooAsk, and explainlikeimfive. This data is cleaned and transformed, and loaded onto BigQuery. The script was ran once an hour through task scheduler getting a range of posts from sepcific dates.
+This is a personal project practicing the ETL process. The data is scraped off Reddit from the subreddits's new post off: AskReddit, TooAfraidTooAsk, and explainlikeimfive. This data is cleaned and transformed, and loaded onto BigQuery. The script was run once an hour through a task scheduler getting a range of posts from specific dates.
 
 ## Project Objective
 
@@ -74,12 +76,13 @@ The project is a learning experience as a junior data engineer learning the func
 * Google Cloud
 * ETL
 
+
 # [Apache Kafka movie and tv show stream onto AWS S3](https://github.com/IvanShamoon/Portfolio/tree/main/Kafka_movie_streaming)
-This is a personal project learning about the streaming data processing tool Apache Kafka. The data streamed onto kafka is off this rest api: [movie api](https://developers.themoviedb.org/3/movies). For Kafka to function, linix virtual machines were set-up running the zookeeper, server, producer, and consumer. The script retrieves this data and loads onto a S3 bucket. After the script is manually shut off, the user crawls the data using AWS Glue onto its finish productive state. Within this state, a user can run SQL queries off it. The creds module is a separete py file containing senitive information.
+This is a personal project learning about the streaming data processing tool Apache Kafka. The data streamed onto kafka is off this rest api: [movie api](https://developers.themoviedb.org/3/movies). For Kafka to function, linux virtual machines were set-up running the zookeeper, server, producer, and consumer. The script retrieves this data and loads onto a S3 bucket. After the script is manually shut off, the user crawls the data using AWS Glue onto its finished productive state. Within this state, a user can run SQL queries off it. The creds module is a separate py file containing sensitive information.
 
 ## Project Objective
 
-This project is a learning experience for Apache Kafka, AWS, S3, and AWS Glue. The goal was to build the kafka process from scratch learning about the concusmer and producer, and in addition learning about the inevitable errors one enouters when setting up the zookeeper and server. The goal was also to try out S3 bucket, previously only having expeirence with Google Cloud's bucket. And lastly seeing how json files can be glued together onto a ready to analysed format to run queries on.
+This project is a learning experience for Apache Kafka, AWS, S3, and AWS Glue. The goal was to build the kafka process from scratch learning about the consumer and producer, and in addition learning about the inevitable errors one encounters when setting up the zookeeper and server. The goal was also to try out S3 bucket, previously only having experience with Google Cloud's bucket. And lastly, seeing how json files can be glued together onto a ready to analyzed format to run queries on.
 
 ## Methods Used
 * s3
@@ -107,13 +110,12 @@ This projects uses a variables of methods using Selenium to scrape off LinkedIn 
 * Data Cleaning
 * Power Bi
 
-# [Risk Calculator for Kidney Transplantation](https://kidneya6data3888.shinyapps.io/Data3888/)
-This is a course project where we  were assigned the task to create a useful tool using gene expression data from patients. The team decided on a risk calulator deployed through Shiny R which takes in gene expression from a user's input to predict whether a certian collection of gene expression calulators a stable/rejection or kidney transplatation.
 
+# [Risk Calculator for Kidney Transplantation](https://kidneya6data3888.shinyapps.io/Data3888/)
+This is a course project where we  were assigned the task to create a useful tool using gene expression data from patients. The team decided on a risk calculator deployed through Shiny R which takes in gene expression from a user's input to predict whether a certain collection of gene expression calculates a stable/rejection or kidney transplantation.
 
 ## Project Objective
-This projects uses a variety of libraries and tools within R to analyse gene expression data to predict an outcome. The final app hoped to be used my medical researchers who would have stake in analysing a certain basket of genes for kidney research. Furthermore, it hoped to create a user friendly tool that is useful and intuitive.
-
+This project uses a variety of libraries and tools within R to analyze gene expression data to predict an outcome. The final app hoped to be used by medical researchers who would have a stake in analyzing a certain basket of genes for kidney research. Furthermore, it hoped to create a user-friendly tool that is useful and intuitive.
 
 ## Methods Used
 * Machine Learning Classifiers 
@@ -121,6 +123,7 @@ This projects uses a variety of libraries and tools within R to analyse gene exp
 * R Shiny App
 * Linking symbol and gene name
 * PCA
+
 
 # [Titanic Dataset Analysis](https://github.com/IvanShamoon/Portfolio/blob/main/Titanic/titanic.ipynb)
 This project is a personal project analysing the famous Titantic dataset, and was one of the first elementary datasets used to develop my data knowledge and tools deployment. 
