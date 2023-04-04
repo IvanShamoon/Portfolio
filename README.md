@@ -51,7 +51,7 @@ This project deploys a variety of text processing and machine learning tools to 
 # [How different are "Safe" to "Unsafe" countries?](https://github.com/IvanShamoon/Portfolio/blob/main/Country-stats-PowerBI/Dashboard.pdf)
 (Sorry for the poor pdf quality)
 
-This is a project showing my dashboard design development against my previous work on here. It showcases a host of information from a variety of countries around the world based on certain features. These features are deemed by myself as dangerous/unsafe. This data is then clustered with k-means clustering for segementation. From here interesting insights can be made based off the segments and information around the web.
+This project demonstrates my dashboard design development against my previous work on here. It showcases a host of information from a variety of countries around the world based on certain features. These features are deemed by myself as dangerous/unsafe. This data is then clustered with k-means clustering for segementation, and from there can be used for interesting insights. Page one provides geographic visuals for these segements along with the leading indicator metrics, page two provides two time-series graphs with more statistics, and page three provides a interactive option to compare country against country.
 
 ## Project Objective
 
